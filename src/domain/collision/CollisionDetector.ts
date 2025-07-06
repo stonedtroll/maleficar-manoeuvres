@@ -1,5 +1,4 @@
-import { Collidable } from '../interfaces/Collidable';
-import { CollisionShape } from '../value-objects/CollisionShape';
+import { SpatialEntity } from '../interfaces/SpatialEntity';
 import { CollisionResult } from '../types/CollisionResult';
 
 export interface CollisionDetector {
@@ -7,23 +6,15 @@ export interface CollisionDetector {
      * Check collision between a moving entity and multiple obstacles
      */
     checkCollision(
-        movingEntity: Collidable,
-        obstacles: Collidable[]
+        movingEntity: SpatialEntity,
+        obstacles: SpatialEntity[]
     ): CollisionResult;
     
     /**
      * Check if two entities collide
      */
     checkSingleCollision(
-        entityA: Collidable,
-        entityB: Collidable
-    ): boolean;
-    
-    /**
-     * Low-level shape collision check (for internal use or special cases)
-     */
-    checkShapeCollision(
-        shapeA: CollisionShape,
-        shapeB: CollisionShape
+        entityA: SpatialEntity,
+        entityB: SpatialEntity
     ): boolean;
 }

@@ -2,11 +2,10 @@
  * Implements the Command pattern for token movement operations.
  * Handles token movement validation, collision detection, and snap-to-token functionality.
  */
-
 import type { Command } from './Command.js';
 import type { MoveResult } from '../types/MoveResult.js';
 import type { MoveTokenCommandOptions } from '../types/CommandOptions.js';
-import type { Collidable } from '../../domain/interfaces/Collidable.js';
+import type { SpatialEntity } from '../../domain/interfaces/SpatialEntity.js';
 import type { MovementValidator } from '../../domain/services/MovementValidator.js';
 import type { SnapPositionCalculator } from '../../domain/services/SnapPositionCalculator.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
@@ -17,6 +16,7 @@ import { Rotation } from '../../domain/value-objects/Rotation.js';
 import { MoveableToken } from '../../domain/entities/MoveableToken.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
+import { MovementValidationResult } from '@/domain/types/MovementValidationResult.js';
 
 /**
  * Command for moving tokens with validation and collision detection.
@@ -31,7 +31,7 @@ export class MoveTokenCommand implements Command<MoveResult> {
     constructor(
         private readonly token: MoveableToken,
         private readonly targetPosition: Vector3,
-        private readonly obstacles: Collidable[],
+        private readonly obstacles: SpatialEntity[],
         private readonly options: MoveTokenCommandOptions,
         private readonly movementValidator: MovementValidator,
         private readonly snapCalculator: SnapPositionCalculator
@@ -45,12 +45,12 @@ export class MoveTokenCommand implements Command<MoveResult> {
     async execute(): Promise<MoveResult> {
         // Store current state for potential undo
         this.storePreviousState();
-        
+
         const startPosition = this.getStartPosition3D();
-        
+
         // Validate the proposed movement
         const validationResult = await this.validateMovement(startPosition);
-        
+
         // Handle blocked movement with snapping
         if (this.isBlockedWithSnappingEnabled(validationResult)) {
             const snapResult = await this.attemptSnapMovement(startPosition, validationResult);
@@ -58,12 +58,12 @@ export class MoveTokenCommand implements Command<MoveResult> {
                 return snapResult;
             }
         }
-        
+
         // Handle invalid movement
         if (!this.isValidMovement(validationResult)) {
             return this.createFailureResult(validationResult);
         }
-        
+
         // Execute valid movement
         return this.executeDirectMovement(validationResult.position!);
     }
@@ -83,11 +83,11 @@ export class MoveTokenCommand implements Command<MoveResult> {
         });
 
         this.token.move(this.startPosition);
-        
+
         if (this.startRotation) {
             this.token.rotate(this.startRotation.degrees);
         }
-        
+
         if (this.startElevation !== undefined) {
             this.token.elevation = this.startElevation;
         }
@@ -99,13 +99,13 @@ export class MoveTokenCommand implements Command<MoveResult> {
     canExecute(): boolean {
         const currentPosition3D = this.getTokenPosition3D();
         const canExecute = !currentPosition3D.equals(this.targetPosition);
-        
+
         this.logger.debug('Checking if command can execute', {
             currentPosition: currentPosition3D,
             targetPosition: this.targetPosition,
             canExecute
         });
-        
+
         return canExecute;
     }
 
@@ -145,7 +145,7 @@ export class MoveTokenCommand implements Command<MoveResult> {
      */
     private async validateMovement(startPosition: Vector3) {
         const { maxDistance, ignoreElevation = false } = this.options;
-        
+
         const validationResult = this.movementValidator.validateMovement(
             this.token,
             startPosition,
@@ -170,9 +170,9 @@ export class MoveTokenCommand implements Command<MoveResult> {
      * Checks if movement is blocked but snapping is enabled.
      */
     private isBlockedWithSnappingEnabled(validationResult: any): boolean {
-        return validationResult.type === 'blocked' && 
-               this.options.enableSnapping && 
-               validationResult.blockers?.length > 0;
+        return validationResult.type === 'blocked' &&
+            this.options.enableSnapping &&
+            validationResult.blockers?.length > 0;
     }
 
     /**
@@ -186,60 +186,60 @@ export class MoveTokenCommand implements Command<MoveResult> {
      * Attempts to snap to a blocking token.
      */
     private async attemptSnapMovement(
-        startPosition: Vector3, 
-        validationResult: any
+        startPosition: Vector3,
+        validationResult: MovementValidationResult
     ): Promise<MoveResult | undefined> {
         // Find token blockers
-        const tokenBlocker = this.findTokenBlocker(validationResult.blockers);
+        const tokenBlocker = this.findTokenBlocker(validationResult.blockers ?? []);
         if (!tokenBlocker) {
             this.logger.debug('No token blocker found for snapping');
             return undefined;
         }
 
+        const collisionPoint = validationResult.collisionPoints?.[0];
+        if (!collisionPoint) {
+            this.logger.debug('No collision point provided, cannot perform snap calculation');
+            return undefined;
+        }
+
         // Calculate snap position
-        const snapResult = await this.calculateSnapPosition(startPosition, tokenBlocker);
+        const snapResult = await this.calculateSnapPosition(startPosition, tokenBlocker, collisionPoint);
         if (!snapResult.success || !snapResult.position) {
             this.logger.debug('Snap calculation failed', snapResult);
             return undefined;
         }
 
-        // Validate snap position
-        const snapValidation = await this.validateSnapPosition(startPosition, snapResult.position);
-        if (!this.isValidMovement(snapValidation)) {
-            this.logger.debug('Snap position validation failed', snapValidation);
-            return undefined;
-        }
-
         // Execute snap movement
-        return this.executeSnapMovement(snapValidation.position!, tokenBlocker);
+        return this.executeSnapMovement(snapResult.position!, tokenBlocker);
     }
 
     /**
      * Finds a token blocker from the list of blockers.
      */
-    private findTokenBlocker(blockers: Collidable[]): MoveableToken | undefined {
+    private findTokenBlocker(blockers: SpatialEntity[]): MoveableToken | undefined {
         const tokenBlocker = blockers.find(blocker => blocker instanceof MoveableToken);
-        
+
         if (tokenBlocker) {
             this.logger.debug('Token blocker found', {
                 blockerId: (tokenBlocker as MoveableToken).id,
                 blockerName: (tokenBlocker as MoveableToken).name
             });
         }
-        
+
         return tokenBlocker as MoveableToken | undefined;
     }
 
     /**
      * Calculates snap position for the given blocker.
      */
-    private async calculateSnapPosition(startPosition: Vector3, tokenBlocker: MoveableToken) {
+    private async calculateSnapPosition(startPosition: Vector3, tokenBlocker: MoveableToken, collisionPoint: Vector3) {
         const snapResult = this.snapCalculator.calculateSnapPosition(
             this.token,
             startPosition,
             this.targetPosition,
             tokenBlocker,
-            this.obstacles
+            this.obstacles,
+            collisionPoint
         );
 
         this.logger.debug('Snap position calculated', {
@@ -252,40 +252,14 @@ export class MoveTokenCommand implements Command<MoveResult> {
     }
 
     /**
-     * Validates the calculated snap position.
-     * 
-     */
-    private async validateSnapPosition(startPosition: Vector3, snapPosition: Vector3) {
-        const { maxDistance, ignoreElevation = false } = this.options;
-        
-        const snapValidation = this.movementValidator.validateMovement(
-            this.token,
-            startPosition,
-            snapPosition,
-            this.obstacles,
-            {
-                ...(maxDistance !== undefined && { maxDistance }),
-                ignoreElevation
-            }
-        );
-
-        this.logger.debug('Snap position validation', {
-            type: snapValidation.type,
-            position: snapValidation.position
-        });
-
-        return snapValidation;
-    }
-
-    /**
      * Executes movement to snap position.
      * 
      */
     private executeSnapMovement(snapPosition: Vector3, snapTarget: MoveableToken): MoveResult {
         const snapPosition2D = new Vector2(snapPosition.x, snapPosition.y);
-        
+
         this.token.move(snapPosition2D);
-        
+
         if (snapPosition.z !== this.token.elevation) {
             this.token.elevation = snapPosition.z;
         }
@@ -308,9 +282,9 @@ export class MoveTokenCommand implements Command<MoveResult> {
      */
     private executeDirectMovement(validatedPosition: Vector3): MoveResult {
         const newPosition2D = new Vector2(validatedPosition.x, validatedPosition.y);
-        
+
         this.token.move(newPosition2D);
-        
+
         if (validatedPosition.z !== this.token.elevation) {
             this.token.elevation = validatedPosition.z;
         }

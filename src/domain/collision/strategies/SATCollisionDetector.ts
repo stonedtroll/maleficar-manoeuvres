@@ -9,26 +9,33 @@
  * - Squared distance calculations to avoid expensive square root operations
  * - Efficient 2D projections for polygon collisions
  */
-
 import type { CollisionDetector } from '../CollisionDetector.js';
-import type { Collidable } from '../../interfaces/Collidable.js';
-import type { CollisionShape } from '../../value-objects/CollisionShape.js';
+import type { SpatialEntity } from '../../interfaces/SpatialEntity.js';
+import type { SpatialVolume } from '../../value-objects/SpatialVolume.js';
 import type { CollisionResult } from '../../types/CollisionResult.js';
+import type { FoundryLogger } from '../../../../lib/log4foundry/log4foundry.js';
 
-import { CollisionShapeGuards } from '../../value-objects/CollisionShape.js';
 import { Vector2 } from '../../value-objects/Vector2.js';
 import { Vector3 } from '../../value-objects/Vector3.js';
 import { Polygon2D } from '../../value-objects/Polygon2D.js';
+import { LoggerFactory } from '../../../../lib/log4foundry/log4foundry.js';
+import { MODULE_ID } from '../../../config.js';
 
 export class SATCollisionDetector implements CollisionDetector {
+  private readonly logger: FoundryLogger;
+
+  constructor() {
+    this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.SATCollisionDetector`);
+  }
+
   /**
    * Checks if a moving entity collides with any obstacles.
    */
   checkCollision(
-    movingEntity: Collidable,
-    obstacles: Collidable[]
+    movingEntity: SpatialEntity,
+    obstacles: SpatialEntity[]
   ): CollisionResult {
-    const collidingObstacles: Collidable[] = [];
+    const collidingObstacles: SpatialEntity[] = [];
 
     for (const obstacle of obstacles) {
       if (this.checkSingleCollision(movingEntity, obstacle)) {
@@ -46,40 +53,29 @@ export class SATCollisionDetector implements CollisionDetector {
    * Checks collision between two individual entities.
    */
   checkSingleCollision(
-    entityA: Collidable,
-    entityB: Collidable
+    entityA: SpatialEntity,
+    entityB: SpatialEntity
   ): boolean {
-    return this.checkShapeCollision(
-      entityA.getCollisionShape(),
-      entityB.getCollisionShape()
-    );
-  }
 
-  /**
-   * Checks collision between two shapes with elevation pre-check.
-   */
-  checkShapeCollision(
-    shapeA: CollisionShape,
-    shapeB: CollisionShape
-  ): boolean {
-    // Quick elevation check for early rejection
-    const extentA = CollisionShapeGuards.getVerticalExtent(shapeA);
-    const extentB = CollisionShapeGuards.getVerticalExtent(shapeB);
-    
+    const extentA = entityA.verticalExtent;
+    const extentB = entityB.verticalExtent;
+
     if (!extentA.overlaps(extentB)) {
       return false;
     }
 
-    // Perform precise collision check
-    return this.checkCollisionOptimised(shapeA, shapeB);
+    return this.checkSpatialCollision(
+      entityA.getSpatialVolume(),
+      entityB.getSpatialVolume()
+    );
   }
 
   /**
    * Optimised collision check routing to specialised algorithms.
    */
-  private checkCollisionOptimised(
-    shapeA: CollisionShape,
-    shapeB: CollisionShape
+  private checkSpatialCollision(
+    shapeA: SpatialVolume,
+    shapeB: SpatialVolume
   ): boolean {
     // Most common case 1: Token vs Token (cylinder vs cylinder)
     if (shapeA.type === 'cylinder' && shapeB.type === 'cylinder') {
@@ -107,8 +103,8 @@ export class SATCollisionDetector implements CollisionDetector {
    * Uses simple 2D circle collision when both cylinders are vertical.
    */
   private cylinderVsCylinder(
-    cylinderA: Extract<CollisionShape, { type: 'cylinder' }>,
-    cylinderB: Extract<CollisionShape, { type: 'cylinder' }>
+    cylinderA: Extract<SpatialVolume, { type: 'cylinder' }>,
+    cylinderB: Extract<SpatialVolume, { type: 'cylinder' }>
   ): boolean {
     // Optimisation: Most tokens in Foundry are vertical cylinders
     if (this.isVerticalCylinder(cylinderA) && this.isVerticalCylinder(cylinderB)) {
@@ -117,7 +113,7 @@ export class SATCollisionDetector implements CollisionDetector {
       const dy = cylinderA.centre.y - cylinderB.centre.y;
       const distanceSquared = dx * dx + dy * dy;
       const radiusSum = cylinderA.radius + cylinderB.radius;
-      
+
       return distanceSquared <= radiusSum * radiusSum;
     }
 
@@ -130,8 +126,8 @@ export class SATCollisionDetector implements CollisionDetector {
    * Common case for token vs wall collisions.
    */
   private cylinderVsExtrudedPolygon(
-    cylinder: Extract<CollisionShape, { type: 'cylinder' }>,
-    polygon: Extract<CollisionShape, { type: 'extrudedPolygon' }>
+    cylinder: Extract<SpatialVolume, { type: 'cylinder' }>,
+    polygon: Extract<SpatialVolume, { type: 'extrudedPolygon' }>
   ): boolean {
     // For vertical cylinders, check 2D circle vs polygon
     if (this.isVerticalCylinder(cylinder)) {
@@ -148,8 +144,8 @@ export class SATCollisionDetector implements CollisionDetector {
    * Uses 2D SAT algorithm since elevation was already checked.
    */
   private extrudedPolygonVsExtrudedPolygon(
-    polygonA: Extract<CollisionShape, { type: 'extrudedPolygon' }>,
-    polygonB: Extract<CollisionShape, { type: 'extrudedPolygon' }>
+    polygonA: Extract<SpatialVolume, { type: 'extrudedPolygon' }>,
+    polygonB: Extract<SpatialVolume, { type: 'extrudedPolygon' }>
   ): boolean {
     return this.polygon2DSAT(polygonA.polygon, polygonB.polygon);
   }
@@ -171,7 +167,7 @@ export class SATCollisionDetector implements CollisionDetector {
     for (const edge of polygon.edges) {
       const closest = this.closestPointOnLineSegment(centre, edge.start, edge.end);
       const distanceSquared = centre.distanceSquaredTo(closest);
-      
+
       if (distanceSquared <= radius * radius) {
         return true;
       }
@@ -210,12 +206,12 @@ export class SATCollisionDetector implements CollisionDetector {
    * Fallback for less common or complex shape combinations.
    */
   private generalCollisionCheck(
-    shapeA: CollisionShape,
-    shapeB: CollisionShape
+    shapeA: SpatialVolume,
+    shapeB: SpatialVolume
   ): boolean {
     const sphereA = this.getBoundingSphere(shapeA);
     const sphereB = this.getBoundingSphere(shapeB);
-    
+
     const distance = sphereA.centre.distanceTo(sphereB.centre);
     return distance <= sphereA.radius + sphereB.radius;
   }
@@ -225,13 +221,13 @@ export class SATCollisionDetector implements CollisionDetector {
    * Currently uses bounding sphere approximation.
    */
   private generalCylinderCollision(
-    cylinderA: Extract<CollisionShape, { type: 'cylinder' }>,
-    cylinderB: Extract<CollisionShape, { type: 'cylinder' }>
+    cylinderA: Extract<SpatialVolume, { type: 'cylinder' }>,
+    cylinderB: Extract<SpatialVolume, { type: 'cylinder' }>
   ): boolean {
     // TODO: Implement precise arbitrary cylinder collision if needed
     const sphereA = this.getBoundingSphere(cylinderA);
     const sphereB = this.getBoundingSphere(cylinderB);
-    
+
     const distance = sphereA.centre.distanceTo(sphereB.centre);
     return distance <= sphereA.radius + sphereB.radius;
   }
@@ -241,7 +237,7 @@ export class SATCollisionDetector implements CollisionDetector {
   /**
    * Checks if a cylinder is vertical (aligned with z-axis).
    */
-  private isVerticalCylinder(cylinder: Extract<CollisionShape, { type: 'cylinder' }>): boolean {
+  private isVerticalCylinder(cylinder: Extract<SpatialVolume, { type: 'cylinder' }>): boolean {
     return cylinder.axis === 'z' || !cylinder.axis;
   }
 
@@ -250,18 +246,18 @@ export class SATCollisionDetector implements CollisionDetector {
    */
   private getPolygonAxes(vertices: readonly Vector2[]): Vector2[] {
     const axes: Vector2[] = [];
-    
+
     for (let i = 0; i < vertices.length; i++) {
       const start = vertices[i];
       const end = vertices[(i + 1) % vertices.length];
-      
+
       if (!start || !end) continue;
-      
+
       const edge = end.subtract(start);
       const normal = edge.perpendicular().normalised();
       axes.push(normal);
     }
-    
+
     return axes;
   }
 
@@ -271,13 +267,13 @@ export class SATCollisionDetector implements CollisionDetector {
   private projectPolygon(vertices: readonly Vector2[], axis: Vector2): [number, number] {
     let min = Infinity;
     let max = -Infinity;
-    
+
     for (const vertex of vertices) {
-        const projection = vertex.dot(axis);
-        min = Math.min(min, projection);
-        max = Math.max(max, projection);
+      const projection = vertex.dot(axis);
+      min = Math.min(min, projection);
+      max = Math.max(max, projection);
     }
-    
+
     return [min, max]; // Tuple is faster than object
   }
 
@@ -292,20 +288,20 @@ export class SATCollisionDetector implements CollisionDetector {
    * Finds closest point on a line segment to a given point.
    */
   private closestPointOnLineSegment(
-    point: Vector2, 
-    lineStart: Vector2, 
+    point: Vector2,
+    lineStart: Vector2,
     lineEnd: Vector2
   ): Vector2 {
     const line = lineEnd.subtract(lineStart);
     const lineLengthSquared = line.magnitudeSquared();
-    
+
     if (lineLengthSquared === 0) {
       return lineStart;
     }
-    
+
     const pointVector = point.subtract(lineStart);
     const t = Math.max(0, Math.min(1, pointVector.dot(line) / lineLengthSquared));
-    
+
     return lineStart.add(line.multiply(t));
   }
 
@@ -313,33 +309,33 @@ export class SATCollisionDetector implements CollisionDetector {
    * Calculates bounding sphere for any collision shape.
    * Used as fallback for complex collision scenarios.
    */
-  private getBoundingSphere(shape: CollisionShape): { centre: Vector3; radius: number } {
+  private getBoundingSphere(shape: SpatialVolume): { centre: Vector3; radius: number } {
     switch (shape.type) {
       case 'sphere':
         return { centre: shape.centre, radius: shape.radius };
-        
+
       case 'cylinder': {
         // Bounding sphere for cylinder
         const radiusSquared = shape.radius * shape.radius;
         const heightSquared = (shape.height * shape.height) / 4;
-        return { 
-          centre: shape.centre, 
+        return {
+          centre: shape.centre,
           radius: Math.sqrt(radiusSquared + heightSquared)
         };
       }
-        
+
       case 'box': {
         // Bounding sphere for box
-        const diagonalSquared = 
-          shape.width * shape.width + 
-          shape.height * shape.height + 
+        const diagonalSquared =
+          shape.width * shape.width +
+          shape.height * shape.height +
           shape.depth * shape.depth;
         return {
           centre: shape.centre,
           radius: Math.sqrt(diagonalSquared) / 2
         };
       }
-        
+
       case 'capsule': {
         // Bounding sphere for capsule
         const midpoint = shape.start.add(shape.end).divide(2);
@@ -349,30 +345,30 @@ export class SATCollisionDetector implements CollisionDetector {
           radius: halfLength + shape.radius
         };
       }
-        
+
       case 'extrudedPolygon': {
         // Bounding sphere for extruded polygon
         const centre2D = this.getPolygonCentre(shape.polygon);
         const maxRadius = this.getPolygonMaxRadius(shape.polygon, centre2D);
-        
+
         const verticalCentre = shape.verticalExtent.centre;
         const halfHeight = shape.verticalExtent.height / 2;
-        
+
         return {
           centre: new Vector3(centre2D.x, centre2D.y, verticalCentre),
           radius: Math.sqrt(maxRadius * maxRadius + halfHeight * halfHeight)
         };
       }
-        
+
       case 'mesh':
       case 'convexHull': {
         // Bounding sphere for vertex-based shapes
         const centre = this.getVerticesCentre(shape.vertices);
         const maxRadius = this.getVerticesMaxRadius(shape.vertices, centre);
-        
+
         return { centre, radius: maxRadius };
       }
-        
+
       default:
         shape satisfies never;
         throw new Error(`Unhandled shape type`);
@@ -385,12 +381,12 @@ export class SATCollisionDetector implements CollisionDetector {
   private getPolygonCentre(polygon: Polygon2D): Vector2 {
     let sumX = 0;
     let sumY = 0;
-    
+
     for (const vertex of polygon.vertices) {
       sumX += vertex.x;
       sumY += vertex.y;
     }
-    
+
     return new Vector2(
       sumX / polygon.vertices.length,
       sumY / polygon.vertices.length
@@ -402,12 +398,12 @@ export class SATCollisionDetector implements CollisionDetector {
    */
   private getPolygonMaxRadius(polygon: Polygon2D, centre: Vector2): number {
     let maxRadiusSquared = 0;
-    
+
     for (const vertex of polygon.vertices) {
       const distSquared = centre.distanceSquaredTo(vertex);
       maxRadiusSquared = Math.max(maxRadiusSquared, distSquared);
     }
-    
+
     return Math.sqrt(maxRadiusSquared);
   }
 
@@ -416,11 +412,11 @@ export class SATCollisionDetector implements CollisionDetector {
    */
   private getVerticesCentre(vertices: readonly Vector3[]): Vector3 {
     let centre = new Vector3(0, 0, 0);
-    
+
     for (const vertex of vertices) {
       centre = centre.add(vertex);
     }
-    
+
     return centre.divide(vertices.length);
   }
 
@@ -429,12 +425,12 @@ export class SATCollisionDetector implements CollisionDetector {
    */
   private getVerticesMaxRadius(vertices: readonly Vector3[], centre: Vector3): number {
     let maxRadiusSquared = 0;
-    
+
     for (const vertex of vertices) {
       const distSquared = centre.distanceSquaredTo(vertex);
       maxRadiusSquared = Math.max(maxRadiusSquared, distSquared);
     }
-    
+
     return Math.sqrt(maxRadiusSquared);
   }
 }

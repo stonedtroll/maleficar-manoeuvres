@@ -1,4 +1,4 @@
-import { Collidable } from '../interfaces/Collidable';
+import { SpatialEntity } from '../interfaces/SpatialEntity';
 import { Vector3 } from '../value-objects/Vector3';
 
 /**
@@ -13,7 +13,7 @@ export interface CollisionResult {
     /**
      * Entities that are colliding with the tested entity
      */
-    collidingWith: Collidable[];
+    collidingWith: SpatialEntity[];
 }
 
 /**
@@ -23,7 +23,7 @@ export interface CollisionDetail {
     /**
      * The entity involved in the collision
      */
-    entity: Collidable;
+    entity: SpatialEntity;
     
     /**
      * Point of collision in world space (if calculable)

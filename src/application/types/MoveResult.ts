@@ -1,11 +1,11 @@
 import { Vector2 } from '../../domain/value-objects/Vector2';
 import { Rotation } from '../../domain/value-objects/Rotation';
-import { Collidable } from '../../domain/interfaces/Collidable';
+import { SpatialEntity } from '../../domain/interfaces/SpatialEntity';
 
 export interface MoveResult {
     success: boolean;
     reason?: string;
-    blockers?: Collidable[];
+    blockers?: SpatialEntity[];
     previousPosition?: Vector2;
     previousRotation?: Rotation;
     newPosition?: Vector2;

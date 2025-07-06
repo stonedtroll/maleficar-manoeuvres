@@ -1,4 +1,4 @@
-import { Collidable } from '../interfaces/Collidable';
+import { SpatialEntity } from '../interfaces/SpatialEntity';
 import { Vector3 } from '../value-objects/Vector3';
 
 /**
@@ -25,7 +25,7 @@ export interface MovementValidationResult {
     /**
      * Entities blocking the movement
      */
-    blockers?: Collidable[];
+    blockers?: SpatialEntity[];
     
     /**
      * First point where collision occurred during movement

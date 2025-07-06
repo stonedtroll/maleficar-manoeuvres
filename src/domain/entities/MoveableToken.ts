@@ -3,13 +3,15 @@
  * This abstract base class provides core functionality for all token types,
  * including position tracking, collision detection, and state management.
  */
+import type { DispositionValue } from '../../domain/constants/TokenDisposition.js';
+
 import { Vector2 } from '../value-objects/Vector2';
-import { CollisionShape } from '../value-objects/CollisionShape';
+import { SpatialVolume } from '../value-objects/SpatialVolume.js';
 import { VerticalExtent } from '../value-objects/VerticalExtent';
 import { AABB } from '../value-objects/AABB';
 import { Rotation } from '../value-objects/Rotation';
-import type { DispositionValue } from '../../domain/constants/TokenDisposition.js';
 import { DISPOSITION } from '../constants/TokenDisposition.js';
+import { Vector3 } from '../value-objects/Vector3.js';
 
 export abstract class MoveableToken {
     // Core properties
@@ -48,8 +50,8 @@ export abstract class MoveableToken {
         this._scale = scale;
     }
 
-    abstract move(newPosition: Vector2): void;
-    abstract getCollisionShape(): CollisionShape;
+    abstract move(newPosition: Vector2  | Vector3): void;
+    abstract getSpatialVolume(): SpatialVolume;
     abstract getAABB(): AABB;
 
     // Getter for position - accessed as token.position
@@ -85,7 +87,7 @@ export abstract class MoveableToken {
     get verticalExtent(): VerticalExtent {
         return new VerticalExtent(
             this._elevation,
-            this._elevation + this._height
+            this._elevation + 1 //TODO: Have to implement vbertical height
         );
     }
 
@@ -110,6 +112,14 @@ export abstract class MoveableToken {
         return new Vector2(
             this._position.x + this._width / 2,
             this._position.y + this._height / 2
+        );
+    }
+
+    get spatialCentre(): Vector3 {
+        return new Vector3(
+            this.centre.x,
+            this.centre.y,
+            this._elevation + 1 / 2 //TODO: Have to implement vertical height
         );
     }
 
@@ -143,5 +153,9 @@ export abstract class MoveableToken {
 
     set disposition(disposition: DispositionValue) {
         this._disposition = disposition;
+    }
+
+    canPassThrough(disposition: DispositionValue): boolean {
+        return this._disposition === disposition || disposition === DISPOSITION.NEUTRAL;
     }
 }

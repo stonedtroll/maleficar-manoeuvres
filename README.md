@@ -21,6 +21,9 @@ To follow the module’s development, you can read the series here: https://hash
 - **Movement Validation**: Path validation with obstacle detection and boundary checking.
 - **Snap-to-Position**: Positioning that snaps tokens to valid locations when movement is blocked.
 - **Elevation Support**: 3D movement with height-based collision detection.
+- **Respects Disposition**:
+    - Allows movement through tokens of the same or neutral disposition.
+    - Never permits a token to end its move overlapping another token, regardless of disposition.
 
 ### Visual Feedback
 - **Facing Arcs**: Display token facing direction and field of view.
