@@ -1,5 +1,3 @@
-import * as PIXI from 'pixi.js';
-
 /**
  * Main container for all overlay graphics
  * This container is added to the canvas primary group

@@ -12,10 +12,22 @@ declare global {
   }
 
   namespace PIXI {
-    export type Container = import("pixi.js").Container & {
+    export type Container = any & {
       name?: string | null;
       eventMode?: string;
     };
+    
+    export interface Point {
+      x: number;
+      y: number;
+    }
+    
+    export interface Rectangle {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }
   }
 
   interface TokenDocument {

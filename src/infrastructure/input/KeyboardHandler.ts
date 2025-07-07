@@ -131,7 +131,7 @@ export class KeyboardHandler implements InitialisableService {
     }
 
     const placeableTokens = canvas?.ready && canvas.tokens
-      ? canvas.tokens.placeables.map((t: Token) => this.extractTokenState(t))
+      ? (canvas.tokens.placeables as Token[]).map((t: Token) => this.extractTokenState(t))
       : [];
 
     const baseEvent = {
@@ -140,7 +140,9 @@ export class KeyboardHandler implements InitialisableService {
       modifiers: { ...this.modifierState },
       timestamp: Date.now(),
       user: {
-        isGM: game.user.isGM
+        isGM: game.user.isGM,
+        id: game.user.id,
+        colour: game.user.color.toString()
       },
       placeableTokens
     };

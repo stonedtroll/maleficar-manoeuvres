@@ -13,7 +13,6 @@
  * - Support both token-mesh and world-space rendering targets
  * - Maintain overlay visibility and parent-child relationships
  */
-import * as PIXI from 'pixi.js';
 import type { EventBus } from '../../infrastructure/events/EventBus.js';
 import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRenderContext.js';
 import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';

@@ -8,10 +8,9 @@ To follow the module’s development, you can read the series here: https://hash
 
 “I endeavoured to turn the ocean to steam by my will alone—only to find its waves dragging me down into oblivion.”
 
-- Beta Version
 - Only compatible with gridless scenes.
 - Limited testing performed.
-- Slighjly over-engineered.
+- Slightly over-engineered.
 - Cartful of technical debt.
 
 ## Features
@@ -31,7 +30,7 @@ To follow the module’s development, you can read the series here: https://hash
 
 ## Usage
 
-- Hold 'm' to display token boundaries.
+- Hold 'm' to display token boundaries and facing arcs.
 - The facing-arc colour indicates each token’s disposition.
 - Selecting a token changes its facing-arc to your user colour.
 - Selection and hover default boundaries are disabled.

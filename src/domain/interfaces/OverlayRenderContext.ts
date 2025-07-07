@@ -153,7 +153,7 @@ type RenderPriority = 'low' | 'normal' | 'high';
 /**
  * Render target types.
  */
-type RenderTarget = 'world' | 'token';
+type RenderTarget = 'canvas' | 'token';
 
 /**
  * Context data passed to overlay render functions.

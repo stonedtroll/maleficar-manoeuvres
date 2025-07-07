@@ -2,12 +2,19 @@ import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefini
 
 export const FacingArcDefinition: OverlayDefinition = {
   id: 'facing-arc',
-  displayName: 'Facing Arc',
+  name: 'Facing Arc',
   description: 'Visual indication of token facing direction',
   category: 'visual',
   enabledByDefault: true,
-  visibleOnStart: true,
-  usePermissionSystem: true,
+  visibleOnStart: false,
+  renderTarget: 'canvas',
+  
+  permissions: {
+    requireLOS: true,
+    requireGM: false,
+    requireOwnership: false,
+    requireControl: false
+  },
 
   displayOn: {
     gridless: true,
@@ -16,7 +23,12 @@ export const FacingArcDefinition: OverlayDefinition = {
     hexPointy: true
   },
 
-  triggers: {},
+  triggers: {
+    tokenHover: false,
+    tokenSelect: false,
+    tokenDrag: true,
+    keyPress: ['m']
+  },
 
   updateOn: {
     tokenMove: true,
@@ -25,5 +37,5 @@ export const FacingArcDefinition: OverlayDefinition = {
     visionChange: true,
     wallChange: true,
     gridChange: false
-  },
+  }
 };

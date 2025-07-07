@@ -162,7 +162,7 @@ export class ManoeuvreApplication {
         total: overlays.length,
         types: overlays.map(o => ({
           id: o.id,
-          displayName: o.displayName,
+          displayName: o.name,
           visibleOnStart: o.visibleOnStart
         }))
       },

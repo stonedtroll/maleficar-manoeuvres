@@ -134,6 +134,8 @@ export interface TokenDragStartEvent {
   prevented: boolean;
   placeableTokens: TokenState[];
   user: {
+    id: string;
+    colour: string;
     isGM: boolean;
   }
 }
@@ -152,6 +154,8 @@ export interface TokenDraggingEvent {
   prevented: boolean;
   placeableTokens: TokenState[];
   user: {
+    id: string;
+    colour: string;
     isGM: boolean;
   }
 }
@@ -248,6 +252,8 @@ export interface KeyboardKeyDownEvent {
   timestamp?: number;
   placeableTokens: TokenState[];
   user: {
+    id: string;
+    colour: string;
     isGM: boolean;
   }
 }
@@ -263,12 +269,13 @@ export interface KeyboardKeyUpEvent {
   };
   timestamp?: number;
   placeableTokens: TokenState[];
-    user: {
+  user: {
+    id: string;
+    colour: string;
     isGM: boolean;
   }
 }
 
 // Settings Events
 export interface SettingsCloseEvent {
-  // Empty event
 }

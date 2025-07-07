@@ -57,7 +57,7 @@ export class OverlayPermissionCoordinator {
     }
 
     // Fast path: overlay doesn't require permissions
-    if (!overlayConfig.usePermissionSystem) {
+    if (!overlayConfig.permissions.requireLOS) {
       this.logger.debug(`Overlay "${overlayId}" bypasses permission system`);
       return true;
     }

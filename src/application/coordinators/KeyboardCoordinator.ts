@@ -1,6 +1,4 @@
 /**
- * @fileoverview Keyboard Coordinator
- * 
  * Coordinates keyboard input and manages keyboard-triggered overlay rendering. This service acts as the
  * bridge between keyboard events and overlay display, managing active key states
  * and determining which overlays should be visible based on user input.
@@ -17,6 +15,7 @@ import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRender
 import type { OverlayRenderingService } from '../../presentation/services/OverlayRenderingService.js';
 import type { OverlayRegistry } from '../registries/OverlayRegistry.js';
 import type { OverlayPermissionCoordinator } from './OverlayPermissionCoordinator.js';
+import type { OverlayContextBuilderRegistry } from '../registries/OverlayContextBuilderRegistry.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
 import { GridlessToken } from '../../domain/entities/GridlessToken.js';
@@ -25,22 +24,6 @@ import { TokenStateAdapter } from '../adapters/TokenStateAdapter.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 
-/**
- * Coordinates keyboard input and manages keyboard-triggered overlay rendering.
- * 
- * Responsibilities:
- * - Track and manage active key press states
- * - Process keyboard events and determine which overlays to display
- * - Manage special key behaviours (e.g., M key for showing all boundaries)
- * - Build keyboard-specific render contexts for overlay display
- * - Clean up overlays when keys are released
- * 
- * Not responsible for:
- * - Raw keyboard event detection (handled by infrastructure layer)
- * - Direct overlay rendering (handled by OverlayRenderingService)
- * - Token movement or selection logic
- * - Permission enforcement (delegated to OverlayPermissionCoordinator)
- */
 export class KeyboardCoordinator {
   private readonly logger: FoundryLogger;
   private readonly activeKeys = new Set<string>();
@@ -53,39 +36,25 @@ export class KeyboardCoordinator {
    */
   private static readonly SHOW_ALL_KEY = 'm';
 
-  /**
-   * Default overlay rendering style. //TODO Move to definition
-   */
-  private static readonly DEFAULT_OVERLAY_STYLE = {
-    borderLineWidth: 2,
-    borderColour: '#4A2A1F',
-    borderOpacity: 0.9,
-    fillColour: '#2A3A28',
-    fillOpacity: 0.5,
-    boundaryStyle: 'circle' as const,
-    dashed: false,
-    dashLength: 0,
-    gapLength: 0
-  };
-
   constructor(
     private readonly overlayRenderer: OverlayRenderingService,
     private readonly overlayRegistry: OverlayRegistry,
     private readonly permissionCoordinator: OverlayPermissionCoordinator,
+    private readonly contextBuilderRegistry: OverlayContextBuilderRegistry,
     private readonly eventBus: EventBus,
     tokenStateAdapter?: TokenStateAdapter
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.KeyboardCoordinator`);
     this.tokenStateAdapter = tokenStateAdapter ?? new TokenStateAdapter();
-    
+
     this.overlayHelper = new OverlayCoordinatorHelper(
       overlayRenderer,
       permissionCoordinator,
       this.tokenStateAdapter
     );
-    
+
     this.registerEventHandlers();
-    
+
     this.logger.info('KeyboardCoordinator initialised');
   }
 
@@ -94,20 +63,24 @@ export class KeyboardCoordinator {
    */
   async handleKeyDown(event: KeyboardKeyDownEvent): Promise<void> {
     const normalisedKey = event.key.toLowerCase();
-    
+
     // Ignore repeated key down events
     if (this.activeKeys.has(normalisedKey)) {
       return;
     }
-    
+
     this.activeKeys.add(normalisedKey);
-    
-    this.logger.debug('Key pressed', { 
-      key: normalisedKey, 
-      activeKeys: Array.from(this.activeKeys) 
+
+    this.logger.debug('Key pressed', {
+      key: normalisedKey,
+      activeKeys: Array.from(this.activeKeys)
     });
-    
-    await this.updateOverlaysForKeyboardState(event.placeableTokens, event.user.isGM);
+
+    await this.updateOverlaysForKeyboardState(
+      event.placeableTokens,
+      event.user.isGM,
+      event.user.colour
+    );
   }
 
   /**
@@ -115,32 +88,35 @@ export class KeyboardCoordinator {
    */
   async handleKeyUp(event: KeyboardKeyUpEvent): Promise<void> {
     const normalisedKey = event.key.toLowerCase();
-    
+
     // Ignore if key wasn't tracked as active
     if (!this.activeKeys.has(normalisedKey)) {
       return;
     }
-    
+
     this.activeKeys.delete(normalisedKey);
-    
-    this.logger.debug('Key released', { 
-      key: normalisedKey, 
-      activeKeys: Array.from(this.activeKeys) 
+
+    this.logger.debug('Key released', {
+      key: normalisedKey,
+      activeKeys: Array.from(this.activeKeys)
     });
-    
-    await this.updateOverlaysForKeyboardState(event.placeableTokens, event.user.isGM);
+
+    await this.updateOverlaysForKeyboardState(
+      event.placeableTokens,
+      event.user.isGM,
+      event.user.colour
+    );
   }
 
   /**
    * Clears all active key states.
-   * Useful for cleanup or when focus is lost.
    */
   clearAllKeys(): void {
     const keyCount = this.activeKeys.size;
     this.activeKeys.clear();
-    
-    this.logger.debug('Cleared all key states', { 
-      previousCount: keyCount 
+
+    this.logger.debug('Cleared all key states', {
+      previousCount: keyCount
     });
   }
 
@@ -157,7 +133,7 @@ export class KeyboardCoordinator {
   private registerEventHandlers(): void {
     this.eventBus.on('keyboard:keyDown', this.handleKeyDown.bind(this));
     this.eventBus.on('keyboard:keyUp', this.handleKeyUp.bind(this));
-    
+
     this.logger.debug('Keyboard event handlers registered');
   }
 
@@ -165,8 +141,9 @@ export class KeyboardCoordinator {
    * Updates overlay visibility based on current keyboard state.
    */
   private async updateOverlaysForKeyboardState(
-    placeableTokens: TokenState[], 
-    isGM: boolean
+    placeableTokens: TokenState[],
+    isGM: boolean,
+    userColour: string
   ): Promise<void> {
     const isMKeyPressed = this.activeKeys.has(KeyboardCoordinator.SHOW_ALL_KEY);
 
@@ -190,7 +167,6 @@ export class KeyboardCoordinator {
     // Separate M key overlays from other key overlays
     const { mKeyOverlays, otherKeyOverlays } = this.separateOverlaysByType(keyTriggeredOverlays);
 
-    // Categorise tokens for rendering
     const { controlled, owned, targetTokens } = this.overlayHelper.categoriseTokensForOverlayRendering(
       placeableTokens,
       { includeAll: isMKeyPressed }
@@ -207,7 +183,8 @@ export class KeyboardCoordinator {
         owned,
         targetTokens,
         otherKeyOverlays,
-        isGM
+        isGM,
+        userColour
       );
     }
 
@@ -218,7 +195,8 @@ export class KeyboardCoordinator {
         owned,
         targetTokens,
         mKeyOverlays,
-        isGM
+        isGM,
+        userColour
       );
     }
   }
@@ -238,14 +216,14 @@ export class KeyboardCoordinator {
     mKeyOverlays: OverlayDefinition[];
     otherKeyOverlays: OverlayDefinition[];
   } {
-    const mKeyOverlays = overlays.filter(overlay => 
+    const mKeyOverlays = overlays.filter(overlay =>
       overlay.triggers?.keyPress?.includes(KeyboardCoordinator.SHOW_ALL_KEY)
     );
-    
+
     const otherKeyOverlays = overlays.filter(overlay => {
       const keyPress = overlay.triggers?.keyPress;
-      return keyPress?.some(key => 
-        key !== KeyboardCoordinator.SHOW_ALL_KEY && 
+      return keyPress?.some(key =>
+        key !== KeyboardCoordinator.SHOW_ALL_KEY &&
         this.activeKeys.has(key.toLowerCase())
       );
     });
@@ -261,16 +239,19 @@ export class KeyboardCoordinator {
     owned: GridlessToken[],
     targetTokens: GridlessToken[],
     overlays: OverlayDefinition[],
-    isGM: boolean
+    isGM: boolean,
+    userColour: string
   ): Promise<void> {
+    const overlaysWithContextBuilders = this.prepareOverlaysWithContextBuilders(overlays);
+
     await this.overlayHelper.requestOverlayRendering(
       controlled,
       owned,
       targetTokens,
-      overlays,
+      overlaysWithContextBuilders,
       isGM,
-      (overlayId, targetToken, isGM) => 
-        this.buildKeyboardRenderContext(overlayId, targetToken, isGM)
+      (overlayId, targetToken, isGM) =>
+        this.buildContextForOverlay(overlayId, targetToken, isGM, userColour, overlaysWithContextBuilders)
     );
   }
 
@@ -282,20 +263,31 @@ export class KeyboardCoordinator {
     owned: GridlessToken[],
     targetTokens: GridlessToken[],
     overlays: OverlayDefinition[],
-    isGM: boolean
+    isGM: boolean,
+    userColour: string
   ): Promise<void> {
     // Clear previous M key overlay tracking
     this.mKeyOverlays.clear();
+
+    this.logger.debug('Rendering M key overlays', {
+      overlayCount: overlays.length,
+    });
+
+    const overlaysWithContextBuilders = this.prepareOverlaysWithContextBuilders(overlays);
+
+    this.logger.debug('Prepared overlays with context builders', {
+      overlayCount: overlaysWithContextBuilders.length,
+    });
 
     // Render overlays
     await this.overlayHelper.requestOverlayRendering(
       controlled,
       owned,
       targetTokens,
-      overlays,
+      overlaysWithContextBuilders,
       isGM,
-      (overlayId, targetToken, isGM) => 
-        this.buildKeyboardRenderContext(overlayId, targetToken, isGM)
+      (overlayId, targetToken, isGM) =>
+        this.buildContextForOverlay(overlayId, targetToken, isGM, userColour, overlaysWithContextBuilders)
     );
 
     // Track M key overlays for cleanup
@@ -308,54 +300,66 @@ export class KeyboardCoordinator {
   }
 
   /**
-   * Builds render context for keyboard-triggered overlays.
+   * Prepares overlays with their context builders.
+   * Filters overlays based on custom permissions if defined.
    */
-  private buildKeyboardRenderContext(
-    overlayTypeId: string,
-    targetToken: GridlessToken,
-    isGM: boolean
-  ): OverlayRenderContext {
-    const style = KeyboardCoordinator.DEFAULT_OVERLAY_STYLE;
-    
-    return {
-      overlayTypeId,
-      renderTarget: 'world',
-      overlayCentre: {
-        x: targetToken.centre.x,
-        y: targetToken.centre.y
-      },
-      token: {
-        id: targetToken.id,
-        name: targetToken.name,
-        position: {
-          x: targetToken.position.x,
-          y: targetToken.position.y
-        },
-        width: targetToken.width,
-        height: targetToken.height,
-        centre: {
-          x: targetToken.centre.x,
-          y: targetToken.centre.y
-        },
-        radius: targetToken.radius
-      },
-      boundary: {
-        borderLineWidth: style.borderLineWidth,
-        borderColour: style.borderColour,
-        borderOpacity: style.borderOpacity,
-        borderRadius: targetToken.radius,
-        fillColour: style.fillColour,
-        fillOpacity: style.fillOpacity,
-        fillRadius: targetToken.radius - 2,
-        boundaryStyle: style.boundaryStyle,
-        dashed: style.dashed,
-        dashLength: style.dashLength,
-        gapLength: style.gapLength
-      },
-      user: {
-        isGM
+  private prepareOverlaysWithContextBuilders(overlays: OverlayDefinition[]): OverlayDefinition[] {
+    return overlays.map(overlay => {
+      // Ensure each overlay has a context builder
+      if (!overlay.contextBuilder) {
+        const builder = this.getContextBuilder(overlay);
+        if (builder) {
+          return { ...overlay, contextBuilder: builder };
+        }
       }
-    };
+      this.logger.warn(`Overlay ${overlay.id} does not have a context builder defined`);
+      return overlay;
+    }).filter(overlay => overlay.contextBuilder);
+  }
+
+  /**
+   * Builds context for a specific overlay.
+   * This method is called by OverlayCoordinatorHelper after permission checks.
+   */
+  private buildContextForOverlay(
+    overlayId: string,
+    targetToken: GridlessToken,
+    isGM: boolean,
+    userColour: string,
+    overlaysWithBuilders: OverlayDefinition[]
+  ): OverlayRenderContext {
+    const overlay = overlaysWithBuilders.find(o => o.id === overlayId);
+    const contextBuilder = overlay?.contextBuilder || this.getContextBuilder({ id: overlayId } as OverlayDefinition);
+
+    if (!contextBuilder) {
+      throw new Error(`No context builder found for overlay ${overlayId}`);
+    }
+
+    return contextBuilder.buildContext(targetToken, {
+      isGM,
+      userColour,
+      activeKeys: this.activeKeys,
+      isControlled: targetToken.controlled
+    });
+  }
+
+  /**
+   * Gets the appropriate context builder for an overlay.
+   */
+  private getContextBuilder(overlay: OverlayDefinition) {
+    // Use overlay's own context builder if defined
+    if (overlay.contextBuilder) {
+      return overlay.contextBuilder;
+    }
+
+    // Fall back to registry
+    const builder = this.contextBuilderRegistry.get(overlay.id);
+    if (builder) {
+      return builder;
+    }
+
+    // Fall back to default boundary builder
+    return this.contextBuilderRegistry.get('boundary-standard');
   }
 
   /**

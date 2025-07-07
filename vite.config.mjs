@@ -64,7 +64,11 @@ const config = {
 		outDir: 'dist',
 		emptyOutDir: true,
 		rollupOptions: {
+			external: ['pixi.js'],
 			output: {
+				globals: {
+					'pixi.js': 'PIXI'
+				},
 				assetFileNames: (assetInfo) => {
 					const name = assetInfo?.fileName || '';
 					if (name.endsWith('.css')) {

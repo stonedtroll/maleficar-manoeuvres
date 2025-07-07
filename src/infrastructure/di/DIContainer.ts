@@ -31,6 +31,7 @@ import { TokenMeshAdapter } from '../adapters/TokenMeshAdapter.js';
 import { AABB } from '../../domain/value-objects/AABB.js';
 import { Vector2 } from '../../domain/value-objects/Vector2.js';
 import { TokenMovementService } from '../services/TokenMovementService.js';
+import { OverlayContextBuilderRegistry } from '../../application/registries/OverlayContextBuilderRegistry.js';
 
 export class DIContainer {
   private readonly services = new Map<string, any>();
@@ -68,7 +69,7 @@ export class DIContainer {
       // Get scene bounds from Foundry canvas
       const sceneBounds = new AABB(
         new Vector2(0, 0), // min point
-        new Vector2(canvas.dimensions?.width ?? 5000, canvas.dimensions?.height ?? 5000) // max point
+        new Vector2(canvas.dimensions?.width ?? 5000, canvas.dimensions?.height ?? 5000) // TODO: Write a canvas adapter
       );
 
       const optimisedCollisionDetector = new OptimisedCollisionDetector(sceneBounds);
@@ -88,15 +89,18 @@ export class DIContainer {
         overlayPermissionService,
         tokenSightRepository
       );
+      
+      // Registry
+      const overlayContextBuilderRegistry = new OverlayContextBuilderRegistry();
 
       // Presentation services
       const overlayRenderer = new OverlayRenderingService(
-        overlayRegistry,  // overlayRegistry implements OverlayRendererRegistry
+        overlayRegistry,  
         eventBus,
         tokenMeshAdapter
       );
 
-      // Coordinators - Updated to include overlayRenderer where needed
+      // Coordinators
       const tokenRotationCoordinator = new TokenRotationCoordinator(
         overlayRegistry,
         overlayPermissionCoordinator,
@@ -116,6 +120,7 @@ export class DIContainer {
         overlayRenderer,
         overlayRegistry,
         overlayPermissionCoordinator,
+        overlayContextBuilderRegistry,  
         eventBus
       );
 
@@ -123,6 +128,7 @@ export class DIContainer {
         overlayRenderer,
         overlayRegistry,
         overlayPermissionCoordinator,
+        overlayContextBuilderRegistry,
         eventBus
       );
 
@@ -134,6 +140,7 @@ export class DIContainer {
       this.services.set('overlayPermissionService', overlayPermissionService);
       this.services.set('overlayRegistry', overlayRegistry);
       this.services.set('overlayPermissionCoordinator', overlayPermissionCoordinator);
+      this.services.set('overlayContextBuilderRegistry', overlayContextBuilderRegistry);
       this.services.set('overlayRenderer', overlayRenderer);
       this.services.set('tokenRotationCoordinator', tokenRotationCoordinator);
       this.services.set('tokenMovementCoordinator', tokenMovementCoordinator);
@@ -214,7 +221,7 @@ export class DIContainer {
   createApplication(): ManoeuvreApplication {
     return new ManoeuvreApplication(
       this.get<EventBus>('eventBus'),
-      this.get<OverlayRegistry>('overlayRegistry')  // Use concrete type directly
+      this.get<OverlayRegistry>('overlayRegistry')  
     );
   }
 

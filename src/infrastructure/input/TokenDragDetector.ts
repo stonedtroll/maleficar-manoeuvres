@@ -1,7 +1,7 @@
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 import type { EventBus } from '../events/EventBus.js';
-import type { TokenState } from '../events/FoundryEvents.js'; // Import the type instead of redefining
+import type { TokenState } from '../events/FoundryEvents.js';
 
 export interface TokenDragState {
   token: Token;
@@ -273,7 +273,7 @@ export class TokenDragDetector {
         scale: token.document.scale,
         visible: token.visible ?? true,
         ownedByCurrentUser: token.isOwner ?? false,
-        disposition: token.document.disposition ?? CONST.TOKEN_DISPOSITIONS.NEUTRAL
+        disposition: token.document.disposition
       },
       position: state.startPosition,
       worldPosition: { x: worldPos.x, y: worldPos.y },
@@ -281,6 +281,8 @@ export class TokenDragDetector {
       prevented: false,
       placeableTokens: placeableTokens,
       user: {
+        id: game.user?.id ?? '',
+        colour: game.user?.colour ?? '',  
         isGM: game.user?.isGM ?? false
       }
     });
@@ -306,7 +308,7 @@ export class TokenDragDetector {
       scale: token.document?.scale ?? 1,
       elevation: token.document?.elevation ?? 0,
       hidden: token.document?.hidden ?? false,
-      disposition: token.document?.disposition ?? CONST.TOKEN_DISPOSITIONS.NEUTRAL
+      disposition: token.document?.disposition
     };
   }
 
@@ -384,7 +386,7 @@ export class TokenDragDetector {
             scale: token.document.scale,
             visible: token.visible ?? true,
             ownedByCurrentUser: token.isOwner ?? false,
-            disposition: token.document.disposition ?? CONST.TOKEN_DISPOSITIONS.NEUTRAL
+            disposition: token.document.disposition 
           },
           worldPosition: { x: currentPos.x, y: currentPos.y },
           screenPosition: { x: 0, y: 0 },
@@ -397,6 +399,8 @@ export class TokenDragDetector {
           prevented: false,
           placeableTokens: placeableTokens,
           user: {
+            id: game.user?.id ?? '',
+            colour: game.user?.colour ?? '',
             isGM: game.user?.isGM ?? false
           }
         });

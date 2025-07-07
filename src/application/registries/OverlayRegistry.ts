@@ -112,14 +112,6 @@ export class OverlayRegistry {
   }
   
   /**
-   * Retrieves overlays that use the permission system.
-   */
-  getPermissionBased(): OverlayDefinition[] {
-    return Array.from(this.overlayTypes.values())
-      .filter(definition => definition.usePermissionSystem === true);
-  }
-  
-  /**
    * Retrieves overlays that update on specific token events.
    */
   getByUpdateEvent(event: 'tokenMove' | 'tokenRotate' | 'tokenElevation'): OverlayDefinition[] {
@@ -148,7 +140,6 @@ export class OverlayRegistry {
    */
   getStats(): {
     total: number;
-    permissionBased: number;
     startupVisible: number;
     byTrigger: Record<string, number>;
     byUpdateEvent: Record<string, number>;
@@ -157,7 +148,6 @@ export class OverlayRegistry {
     
     return {
       total: overlays.length,
-      permissionBased: overlays.filter(o => o.usePermissionSystem).length,
       startupVisible: overlays.filter(o => o.visibleOnStart).length,
       byTrigger: {
         tokenDrag: overlays.filter(o => o.triggers?.tokenDrag).length,
@@ -180,14 +170,14 @@ export class OverlayRegistry {
       throw new Error('Overlay definition must have an id');
     }
     
-    if (!definition.displayName) {
+    if (!definition.name) {
       throw new Error(`Overlay definition "${definition.id}" must have a name`);
     }
     
     // Validate boolean fields are actually booleans if present
-    if (definition.usePermissionSystem !== undefined && 
-        typeof definition.usePermissionSystem !== 'boolean') {
-      throw new Error(`Overlay definition "${definition.id}" usePermissionSystem must be a boolean`);
+    if (definition.permissions.requireLOS !== undefined && 
+        typeof definition.permissions.requireLOS !== 'boolean') {
+      throw new Error(`Overlay definition "${definition.id}" permissions.requireLOS must be a boolean`);
     }
     
     if (definition.visibleOnStart !== undefined && 

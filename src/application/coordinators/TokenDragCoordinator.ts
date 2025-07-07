@@ -1,5 +1,4 @@
 /**
- * @fileoverview Token Drag Coordinator
  * 
  * Manages token drag operations and coordinates drag-triggered overlay rendering. This service tracks individual
  * token drag states and ensures appropriate overlays are displayed during drag
@@ -21,10 +20,12 @@ import type {
   TokenDragCancelEvent,
   TokenState
 } from '../../infrastructure/events/FoundryEvents.js';
+import type { OverlayDefinition } from '../../domain/interfaces/OverlayDefinition.js';
 import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRenderContext.js';
 import type { OverlayRenderingService } from '../../presentation/services/OverlayRenderingService.js';
 import type { OverlayRegistry } from '../registries/OverlayRegistry.js';
 import type { OverlayPermissionCoordinator } from './OverlayPermissionCoordinator.js';
+import type { OverlayContextBuilderRegistry } from '../registries/OverlayContextBuilderRegistry.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
 import { GridlessToken } from '../../domain/entities/GridlessToken.js';
@@ -32,8 +33,6 @@ import { OverlayCoordinatorHelper } from './helpers/OverlayCoordinatorHelper.js'
 import { TokenStateAdapter } from '../adapters/TokenStateAdapter.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
-
-
 
 export class TokenDragCoordinator {
   private readonly logger: FoundryLogger;
@@ -45,25 +44,11 @@ export class TokenDragCoordinator {
   private readonly overlayHelper: OverlayCoordinatorHelper;
   private readonly tokenStateAdapter: TokenStateAdapter;
 
-  /**
-   * Default overlay rendering style for drag operations. //TODO Move to definition
-   */
-  private static readonly DEFAULT_DRAG_STYLE = {
-    borderLineWidth: 2,
-    borderColour: '#4A2A1F',
-    borderOpacity: 0.9,
-    fillColour: '#2A3A28',
-    fillOpacity: 0.5,
-    boundaryStyle: 'circle' as const,
-    dashed: false,
-    dashLength: 0,
-    gapLength: 0
-  };
-
   constructor(
-    private readonly overlayRenderingService: OverlayRenderingService,
+    private readonly overlayRenderer: OverlayRenderingService,
     private readonly overlayRegistry: OverlayRegistry,
     private readonly permissionCoordinator: OverlayPermissionCoordinator,
+    private readonly contextBuilderRegistry: OverlayContextBuilderRegistry,
     private readonly eventBus: EventBus,
     tokenStateAdapter?: TokenStateAdapter
   ) {
@@ -71,7 +56,7 @@ export class TokenDragCoordinator {
     this.tokenStateAdapter = tokenStateAdapter ?? new TokenStateAdapter();
 
     this.overlayHelper = new OverlayCoordinatorHelper(
-      overlayRenderingService,
+      overlayRenderer,
       permissionCoordinator,
       this.tokenStateAdapter
     );
@@ -102,7 +87,11 @@ export class TokenDragCoordinator {
       });
 
       // Update overlays for drag operation
-      await this.updateDragOverlays(event.placeableTokens, event.user.isGM);
+      await this.updateDragOverlays(
+        event.placeableTokens, 
+        event.user.isGM,
+        event.user.colour
+      );
     } catch (error) {
       this.logger.error('Error in handleDragStart', {
         error: error instanceof Error ? error.message : String(error),
@@ -116,39 +105,43 @@ export class TokenDragCoordinator {
    * Updates current position and refreshes overlays if needed.
    */
   async handleDragging(event: TokenDraggingEvent): Promise<void> {
-    // try {
-    //   const dragState = this.dragStates.get(event.id);
-    //   if (!dragState?.isDragging) {
-    //     return;
-    //   }
+    try {
+      const dragState = this.dragStates.get(event.id);
+      if (!dragState?.isDragging) {
+        return;
+      }
 
-    //   // Calculate delta from previous position
-    //   const delta = {
-    //     x: event.currentState.x - dragState.currentPosition.x,
-    //     y: event.currentState.y - dragState.currentPosition.y
-    //   };
+      // Calculate delta from previous position
+      const delta = {
+        x: event.currentState.x - dragState.currentPosition.x,
+        y: event.currentState.y - dragState.currentPosition.y
+      };
 
-    //   // Update current position
-    //   dragState.currentPosition = { x: event.currentState.x, y: event.currentState.y };
+      // Update current position
+      dragState.currentPosition = { x: event.currentState.x, y: event.currentState.y };
 
-    //   this.logger.debug('Token dragging', {
-    //     tokenId: event.id,
-    //     position: dragState.currentPosition,
-    //     delta
-    //   });
+      this.logger.debug('Token dragging', {
+        tokenId: event.id,
+        position: dragState.currentPosition,
+        delta
+      });
 
-    //   // Update overlays if position has changed significantly
-    //   // Optimise by checking distance threshold
-    //   const distanceMoved = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-    //   if (distanceMoved > 5) { // Only update if moved more than 5 pixels
-    //     await this.updateDragOverlays(event.placeableTokens, event.user.isGM);
-    //   }
-    // } catch (error) {
-    //   this.logger.error('Error in handleDragging', {
-    //     error: error instanceof Error ? error.message : String(error),
-    //     eventId: event?.id
-    //   });
-    // }
+      // Update overlays if position has changed significantly
+      // Optimise by checking distance threshold
+      const distanceMoved = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+      if (distanceMoved > 5) { // Only update if moved more than 5 pixels
+        await this.updateDragOverlays(
+          event.placeableTokens, 
+          event.user.isGM,
+          event.user.colour
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error in handleDragging', {
+        error: error instanceof Error ? error.message : String(error),
+        eventId: event?.id
+      });
+    }
   }
 
   /**
@@ -224,7 +217,11 @@ export class TokenDragCoordinator {
    * Updates overlays during drag operations.
    * Only processes overlays configured for drag triggers.
    */
-  private async updateDragOverlays(placeableTokens: TokenState[], isGM: boolean): Promise<void> {
+  private async updateDragOverlays(
+    placeableTokens: TokenState[], 
+    isGM: boolean,
+    userColour: string
+  ): Promise<void> {
     // Filter overlays with drag triggers
     const dragOverlays = this.overlayRegistry.getAll()
       .filter(overlay => overlay.triggers?.tokenDrag === true);
@@ -244,66 +241,90 @@ export class TokenDragCoordinator {
       targetTokenCount: targetTokens.length
     });
 
+    // Prepare overlays with context builders
+    const overlaysWithContextBuilders = this.prepareOverlaysWithContextBuilders(dragOverlays);
+
     // Request overlay rendering
     await this.overlayHelper.requestOverlayRendering(
       controlled,
       owned,
       targetTokens,
-      dragOverlays,
+      overlaysWithContextBuilders,
       isGM,
-      (overlayId, targetToken, isGM) => this.buildDragRenderContext(overlayId, targetToken, isGM)
+      (overlayId, targetToken, isGM) => 
+        this.buildContextForOverlay(overlayId, targetToken, isGM, userColour, overlaysWithContextBuilders)
     );
   }
 
   /**
-   * Builds render context for drag-triggered overlays.
+   * Prepares overlays with their context builders.
    */
-  private buildDragRenderContext(
-    overlayTypeId: string,
-    targetToken: GridlessToken,
-    isGM: boolean
-  ): OverlayRenderContext {
-    const style = TokenDragCoordinator.DEFAULT_DRAG_STYLE;
-
-    return {
-      overlayTypeId,
-      renderTarget: 'world',
-      overlayCentre: {
-        x: targetToken.centre.x,
-        y: targetToken.centre.y
-      },
-      token: {
-        id: targetToken.id,
-        name: targetToken.name,
-        position: {
-          x: targetToken.position.x,
-          y: targetToken.position.y
-        },
-        width: targetToken.width,
-        height: targetToken.height,
-        centre: {
-          x: targetToken.centre.x,
-          y: targetToken.centre.y
-        },
-        radius: targetToken.radius
-      },
-      boundary: {
-        borderLineWidth: style.borderLineWidth,
-        borderColour: style.borderColour,
-        borderOpacity: style.borderOpacity,
-        borderRadius: targetToken.radius,
-        fillColour: style.fillColour,
-        fillOpacity: style.fillOpacity,
-        fillRadius: targetToken.radius - 2,
-        boundaryStyle: style.boundaryStyle,
-        dashed: style.dashed,
-        dashLength: style.dashLength,
-        gapLength: style.gapLength
-      },
-      user: {
-        isGM
+  private prepareOverlaysWithContextBuilders(overlays: OverlayDefinition[]): OverlayDefinition[] {
+    return overlays.map(overlay => {
+      // Ensure each overlay has a context builder
+      if (!overlay.contextBuilder) {
+        const builder = this.getContextBuilder(overlay);
+        if (builder) {
+          return { ...overlay, contextBuilder: builder };
+        }
+        this.logger.warn(`No context builder found for overlay ${overlay.id}`, {
+          overlayId: overlay.id,
+          registryHasBuilder: this.contextBuilderRegistry.get(overlay.id) !== undefined,
+          availableBuilders: Array.from(this.contextBuilderRegistry.getAll().keys())
+        });
       }
-    };
+      return overlay;
+    }).filter(overlay => overlay.contextBuilder);
+  }
+
+  /**
+   * Builds context for a specific overlay.
+   * This method is called by OverlayCoordinatorHelper after permission checks.
+   */
+  private buildContextForOverlay(
+    overlayId: string,
+    targetToken: GridlessToken,
+    isGM: boolean,
+    userColour: string,
+    overlaysWithBuilders: OverlayDefinition[]
+  ): OverlayRenderContext {
+    const overlay = overlaysWithBuilders.find(o => o.id === overlayId);
+    const contextBuilder = overlay?.contextBuilder || this.getContextBuilder({ id: overlayId } as OverlayDefinition);
+    
+    if (!contextBuilder) {
+      throw new Error(`No context builder found for overlay ${overlayId}`);
+    }
+
+    // Get drag state for additional context
+    const dragState = this.dragStates.get(targetToken.id);
+    
+    return contextBuilder.buildContext(targetToken, {
+      isGM,
+      userColour,
+      isControlled: targetToken.controlled,
+      isDragging: dragState?.isDragging ?? false,
+      dragStartPosition: dragState?.startPosition,
+      dragCurrentPosition: dragState?.currentPosition
+    });
+  }
+
+  /**
+   * Gets the appropriate context builder for an overlay.
+   */
+  private getContextBuilder(overlay: OverlayDefinition) {
+    // Use overlay's own context builder if defined
+    if (overlay.contextBuilder) {
+      return overlay.contextBuilder;
+    }
+
+    // Fall back to registry
+    const builder = this.contextBuilderRegistry.get(overlay.id);
+    if (builder) {
+      return builder;
+    }
+
+    // Fall back to default boundary builder
+    return this.contextBuilderRegistry.get('boundary-standard');
   }
 
   /**
@@ -339,7 +360,7 @@ export class TokenDragCoordinator {
 
       // Clear each overlay type
       for (const overlay of dragOverlays) {
-        this.overlayRenderingService.hideAllOverlaysOfType(overlay.id);
+        this.overlayRenderer.hideAllOverlaysOfType(overlay.id);
       }
     } catch (error) {
       this.logger.error('Error hiding drag overlays', {

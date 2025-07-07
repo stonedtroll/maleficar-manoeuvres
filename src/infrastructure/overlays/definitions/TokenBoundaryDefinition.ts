@@ -2,12 +2,19 @@ import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefini
 
 export const TokenBoundaryDefinition: OverlayDefinition = {
   id: 'token-boundary',
-  displayName: 'Token Boundary',
+  name: 'Token Boundary',
   description: 'Highlights token boundaries on hover or selection',
   category: 'visual',
   enabledByDefault: true,
   visibleOnStart: false,
-  usePermissionSystem: true,
+  renderTarget: 'canvas',
+
+  permissions: {
+    requireLOS: true,
+    requireGM: false,
+    requireOwnership: false,
+    requireControl: false
+  },
 
   displayOn: {
     gridless: true,
@@ -30,5 +37,5 @@ export const TokenBoundaryDefinition: OverlayDefinition = {
     visionChange: true,
     wallChange: true,
     gridChange: true
-  },
+  }
 };

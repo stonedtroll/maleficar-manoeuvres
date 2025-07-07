@@ -2,7 +2,7 @@
   "id": "maleficar-manoeuvres",
   "title": "Maleficar Manoeuvres",
   "description": "A Foundry VTT module that provides customizable token boundaries, token snapping, and other enhancements.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13.346",
@@ -32,6 +32,6 @@
   "url": "https://github.com/stonedtroll/maleficar-manoeuvres",
   "manifest": "https://github.com/stonedtroll/maleficar-manoeuvres/releases/latest/download/module.json",
   "download": "https://github.com/stonedtroll/maleficar-manoeuvres/releases/latest/download/module.zip",
-  "license": "GPL-3.0",
-  "bugs": "https://github.com/stonedtroll/maleficar-manoeuvres/issues"
+  "bugs": "https://github.com/stonedtroll/maleficar-manoeuvres/issues",
+  "license": "GPL-3.0"
 }

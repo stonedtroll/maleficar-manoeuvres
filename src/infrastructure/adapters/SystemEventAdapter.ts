@@ -243,20 +243,20 @@ export class SystemEventAdapter implements InitialisableService {
   }
 
   private handleTokenHover(token: Token, hovered: boolean): void {
-    if (!token) return;
+    // if (!token) return;
 
-    if (token.border) {
-      token.border.clear();
-    }
-    const event = {
-      tokenId: token.id,
-      token,
-      userId: game.user?.id || ''
-    };
+    // if (token.border) {
+    //   token.border.clear();
+    // }
+    // const event = {
+    //   tokenId: token.id,
+    //   token,
+    //   userId: game.user?.id || ''
+    // };
 
-    this.eventBus.emit(hovered ? 'token:hover' : 'token:hoverEnd', event);
+    // this.eventBus.emit(hovered ? 'token:hover' : 'token:hoverEnd', event);
 
-    this.logger.debug(`Token hover ${hovered ? 'started' : 'ended'}: ${token.name} [${token.id}]`);
+    // this.logger.debug(`Token hover ${hovered ? 'started' : 'ended'}: ${token.name} [${token.id}]`);
   }
 
   private handlePreUpdateToken(
