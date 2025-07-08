@@ -107,7 +107,8 @@ export interface TokenUpdateEvent {
     id: string;
     colour: string;
     isGM: boolean;
-  }
+  };
+  isUnconstrainedMovement: boolean;
 }
 
 export interface TokenRefreshEvent {

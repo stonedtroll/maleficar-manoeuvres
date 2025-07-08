@@ -6,7 +6,7 @@ import { LogLevel, LoggerFactory } from '../lib/log4foundry/log4foundry.js';
  */
 export const LOG_LEVEL_CHOICES = {
   'debug': 'Debug - Show all messages',
-  'info': 'Info - Show informational messages and above',
+  'info': 'Info - Do not show debug messages',
   'warn': 'Warning - Show warnings and errors only',
   'error': 'Error - Show errors only',
   'fatal': 'Fatal - Show critical errors only',

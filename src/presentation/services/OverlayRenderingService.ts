@@ -476,7 +476,6 @@ export class OverlayRenderingService implements InitialisableService {
     Hooks.on('canvasTearDown', this.handleCanvasTearDown.bind(this));
     Hooks.on('canvasReady', this.handleCanvasReady.bind(this));
     Hooks.on('deleteToken', this.handleDeleteToken.bind(this));
-    Hooks.on('controlToken', this.handleControlToken.bind(this));
   }
 
   private handleCanvasTearDown(): void {
@@ -495,16 +494,6 @@ export class OverlayRenderingService implements InitialisableService {
     if (this.isInitialised) {
       this.clearAllTokenOverlays(tokenDocument.id);
     }
-  }
-
-  private handleControlToken(token: Token, controlled: boolean): void {
-    if (!this.isInitialised) return;
-    
-    this.logger.debug('Token control changed', {
-      tokenId: token.id,
-      controlled,
-      hasOverlays: this.findTokenOverlayKeys(token.id).length > 0
-    });
   }
 
   // Helper Methods

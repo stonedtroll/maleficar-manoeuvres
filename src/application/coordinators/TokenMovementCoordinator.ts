@@ -42,9 +42,9 @@ export class TokenMovementCoordinator {
     private readonly eventBus: EventBus
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.TokenMovementCoordinator`);
-    
+
     this.registerEventHandlers();
-    
+
     this.logger.info('TokenMovementCoordinator initialised');
   }
 
@@ -54,16 +54,20 @@ export class TokenMovementCoordinator {
    */
   async handleTokenUpdate(event: TokenUpdateEvent): Promise<void> {
     try {
+      if (event.isUnconstrainedMovement) {
+        return;
+      }
+
       // Check if position has changed
       if (event.updateOptions.maleficarManoeuvresValidatedMove || !this.hasPositionChanged(event)) {
         return;
       }
 
       const { currentState, changedState, placeableTokens } = event;
-      
+
       // Calculate target position
       const targetPosition = this.calculateTargetPosition(currentState, changedState);
-      
+
       // Skip if no actual movement
       if (this.isSamePosition(currentState, targetPosition)) {
         this.logger.debug('No actual position change detected');
@@ -79,7 +83,7 @@ export class TokenMovementCoordinator {
 
       // Emit movement event based on result
       await this.emitMovementEvent(currentState, moveResult);
-      
+
     } catch (error) {
       this.logger.error('Error handling token update', {
         error: error instanceof Error ? error.message : String(error),
@@ -93,7 +97,7 @@ export class TokenMovementCoordinator {
    */
   private registerEventHandlers(): void {
     this.eventBus.on('token:update', this.handleTokenUpdate.bind(this));
-    
+
     this.logger.debug('Token update event handler registered');
   }
 
@@ -125,8 +129,8 @@ export class TokenMovementCoordinator {
     currentState: TokenUpdateEvent['currentState'],
     targetPosition: Vector3
   ): boolean {
-    return targetPosition.x === currentState.x && 
-           targetPosition.y === currentState.y;
+    return targetPosition.x === currentState.x &&
+      targetPosition.y === currentState.y;
   }
 
   /**
@@ -175,8 +179,8 @@ export class TokenMovementCoordinator {
     placeableTokens: TokenUpdateEvent['placeableTokens']
   ) {
     return placeableTokens
-      .filter(token => 
-        token.id !== movingTokenId && 
+      .filter(token =>
+        token.id !== movingTokenId &&
         !token.hidden
       )
       .map(token => this.tokenStateAdapter.toGridlessToken(token));
@@ -194,13 +198,13 @@ export class TokenMovementCoordinator {
     const basePayload = {
       tokenId: tokenState.id,
       tokenName: tokenState.name,
-      fromPosition: moveResult.previousPosition ?? { 
-        x: tokenState.x, 
-        y: tokenState.y 
+      fromPosition: moveResult.previousPosition ?? {
+        x: tokenState.x,
+        y: tokenState.y
       },
-      toPosition: moveResult.newPosition ?? { 
-        x: tokenState.x, 
-        y: tokenState.y 
+      toPosition: moveResult.newPosition ?? {
+        x: tokenState.x,
+        y: tokenState.y
       },
       isSnapped: moveResult.isSnapped ?? false,
       distance: moveResult.distance ?? 0

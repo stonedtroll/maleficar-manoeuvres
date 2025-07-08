@@ -1,4 +1,6 @@
 import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRenderContext.js';
+
+import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 

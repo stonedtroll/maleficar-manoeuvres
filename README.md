@@ -23,17 +23,18 @@ To follow the module’s development, you can read the series here: https://hash
 - **Respects Disposition**:
     - Allows movement through tokens of the same or neutral disposition.
     - Never permits a token to end its move overlapping another token, regardless of disposition.
+- **Unconstrained Movement**: When the unconstrained movement toggle is active, tokens may move through and occupy spaces containing obstacles, ignoring normal collision checks.
 
 ### Visual Feedback
 - **Facing Arcs**: Display token facing direction and field of view.
 - **Token Boundaries**: Visual representation of token collision boundaries.
 
 ## Usage
-
 - Hold 'm' to display token boundaries and facing arcs.
 - The facing-arc colour indicates each token’s disposition.
 - Selecting a token changes its facing-arc to your user colour.
 - Selection and hover default boundaries are disabled.
+
 **Note:** Overlays only appear for tokens visible to your currently selected token. If no token is selected, it default to your controlled token(s).
 
 ## Suggested Module

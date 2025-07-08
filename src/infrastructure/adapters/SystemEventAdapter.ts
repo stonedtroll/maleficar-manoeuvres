@@ -195,7 +195,7 @@ export class SystemEventAdapter implements InitialisableService {
       this.logger.debug('Emitting tokens:ready event', {
         tokensReadyEvent
       });
-      this.eventBus.emit('tokens:ready', tokensReadyEvent );
+      this.eventBus.emit('tokens:ready', tokensReadyEvent);
     }, 0);
   }
 
@@ -238,7 +238,7 @@ export class SystemEventAdapter implements InitialisableService {
         isGM: game.user?.isGM
       }
     }
-    
+
     this.eventBus.emit('token:control', event);
   }
 
@@ -308,6 +308,16 @@ export class SystemEventAdapter implements InitialisableService {
     };
   }
 
+  private isUnconstrainedMovementEnabled(): boolean {
+    const unconstrainedMovementTool = ui.controls?.tools?.unconstrainedMovement;
+    
+    if (!unconstrainedMovementTool) {
+      return false;
+    }
+
+    return unconstrainedMovementTool.active ?? false;
+  }
+
   private handleTokenUpdate(
     document: TokenDocument,
     changes: any,
@@ -322,6 +332,7 @@ export class SystemEventAdapter implements InitialisableService {
     if (options.maleficarManoeuvresValidatedMove) {
       return;
     }
+
     const token = canvas?.tokens?.get(document.id);
     const user = game.users?.get(userId);
     const placeableTokens: TokenState[] = [];
@@ -350,7 +361,8 @@ export class SystemEventAdapter implements InitialisableService {
         id: userId,
         colour: user?.color.toString(16).padStart(6, "0"),
         isGM: user?.isGM
-      }
+      },
+      isUnconstrainedMovement: this.isUnconstrainedMovementEnabled()
     };
     this.eventBus.emit('token:update', event);
 
