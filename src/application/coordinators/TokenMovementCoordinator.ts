@@ -7,7 +7,6 @@
  * - Intelligent collision detection during movement
  * - Automatic snapping to valid positions
  * - Movement validation through domain services
- * - Event emission for movement tracking
  */
 
 import type { TokenUpdateEvent } from '../../infrastructure/events/FoundryEvents.js';
