@@ -82,7 +82,7 @@ export class MovementValidator {
 
     if (distance < 0.1) {
       this.logger.debug('Movement negligible, early exit', { distance });
-      return { type: 'valid', position: end };
+      return { type: 'ignored', position: end };
     }
 
     // Validate distance constraint

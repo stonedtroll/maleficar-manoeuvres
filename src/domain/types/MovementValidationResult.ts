@@ -5,7 +5,7 @@ import { Vector3 } from '../value-objects/Vector3';
  * Result of a movement validation check
  */
 export interface MovementValidationResult {
-    type: 'valid' | 'invalid' | 'blocked';
+    type: 'valid' | 'invalid' | 'blocked' | 'ignored';
     
     /**
      * Final position after movement (may differ from requested position)

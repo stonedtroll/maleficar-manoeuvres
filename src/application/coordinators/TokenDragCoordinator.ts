@@ -35,11 +35,13 @@ import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { Vector3 } from '../../domain/value-objects/Vector3.js';
 import { MovementValidator } from '../../domain/services/MovementValidator.js';
 import { MODULE_ID } from '../../config.js';
+import { SpatialEntity } from '../../domain/interfaces/SpatialEntity.js';
 
 export class TokenDragCoordinator {
   private readonly logger: FoundryLogger;
   private readonly overlayHelper: OverlayCoordinatorHelper;
   private readonly tokenStateAdapter: TokenStateAdapter;
+  private previousBlocker: SpatialEntity | null = null;
 
   constructor(
     private readonly overlayRenderer: OverlayRenderingService,
@@ -146,46 +148,83 @@ export class TokenDragCoordinator {
  * Validates movement using MovementValidator and updates obstacle overlays
  */
   private async updateObstacleIndicatorOverlays(
-    event: TokenDragStartEvent | TokenDragMoveEvent
-  ): Promise<void> {
-    try {
-      const movingToken = this.tokenStateAdapter.toGridlessToken(event.controlledToken);
-      const obstacles = this.prepareObstacles(movingToken.id, event.placeableTokens);
+  event: TokenDragStartEvent | TokenDragMoveEvent
+): Promise<void> {
+  try {
+    const movingToken = this.tokenStateAdapter.toGridlessToken(event.controlledToken);
+    const obstacles = this.prepareObstacles(movingToken.id, event.placeableTokens);
 
-      const startPosition = new Vector3(
-        event.controlledToken.x,
-        event.controlledToken.y,
-        event.controlledToken.elevation || 0
-      );
+    const startPosition = new Vector3(
+      event.controlledToken.x,
+      event.controlledToken.y,
+      event.controlledToken.elevation || 0
+    );
 
-      const dragPosition = new Vector3(
-        event.dragPosition.x,
-        event.dragPosition.y,
-        event.dragElevation || 0
-      );
+    const dragPosition = new Vector3(
+      event.dragPosition.x,
+      event.dragPosition.y,
+      event.dragElevation || 0
+    );
 
-      const validationResult = this.movementValidator.validateMovement(
-        movingToken,
-        startPosition,
-        dragPosition,
-        obstacles
-      );
+    const validationResult = this.movementValidator.validateMovement(
+      movingToken,
+      startPosition,
+      dragPosition,
+      obstacles
+    );
 
-      await this.clearObstacleIndicatorOverlays();
+    const currentBlocker = validationResult.blockers?.[0] ?? null;
 
-      if (validationResult.blockers && validationResult.blockers.length > 0) {
-        for (const blocker of validationResult.blockers) {
-          await this.renderObstacleIndicatorOverlays([movingToken] as GridlessToken[], blocker as GridlessToken, event.user.isGM, event.user.colour);
-        }
-      }
-
-    } catch (error) {
-      this.logger.error('Error validating movement and updating overlays', {
-        tokenId: event.controlledToken.id,
-        error: error instanceof Error ? error.message : String(error)
-      });
+    if (currentBlocker && validationResult.type === 'blocked') {
+      await this.handleObstacleDetected(currentBlocker, movingToken, event);
+    } else if (validationResult.type !== 'ignored') {
+      await this.handleObstacleClear();
     }
+
+  } catch (error) {
+    this.logger.error('Error validating movement and updating overlays', {
+      tokenId: event.controlledToken.id,
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
+}
+
+/**
+ * Handles when an obstacle is detected during movement.
+ * Only renders if the obstacle has changed from the previous one.
+ */
+private async handleObstacleDetected(
+  currentBlocker: SpatialEntity,
+  movingToken: GridlessToken,
+  event: TokenDragStartEvent | TokenDragMoveEvent
+): Promise<void> {
+  if (this.previousBlocker?.id === currentBlocker.id) {
+    return;
+  }
+
+  await this.clearObstacleIndicatorOverlays();
+  await this.renderObstacleIndicatorOverlays(
+    [movingToken],
+    currentBlocker as GridlessToken,
+    event.user.isGM,
+    event.user.colour
+  );
+
+  this.previousBlocker = currentBlocker;
+}
+
+/**
+ * Handles when no obstacles are detected.
+ * Clears any existing obstacle indicators.
+ */
+private async handleObstacleClear(): Promise<void> {
+  if (this.previousBlocker === null) {
+    return;
+  }
+
+  await this.clearObstacleIndicatorOverlays();
+  this.previousBlocker = null;
+}
 
   /**
    * Prepares obstacles for collision detection.

@@ -41,7 +41,7 @@ export class TokenBoundaryContextBuilder implements OverlayContextBuilder {
       boundary: {
         borderLineWidth: 2,
         borderColour: '#4A2A1F',
-        borderOpacity: 0.8,
+        borderOpacity: 0.5,
         borderRadius: token.radius,
         fillColour: '#2A3A28',
         fillOpacity: 0.1,

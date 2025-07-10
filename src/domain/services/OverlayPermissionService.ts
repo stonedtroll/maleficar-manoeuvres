@@ -147,14 +147,14 @@ export class OverlayPermissionService {
         }
 
         // Target must be within viewer's vision range
-        if (!this.isTargetInSightRange(viewer, target)) {
-            this.logger.debug('Sight check failed: Target outside vision range', {
-                viewerId: viewer.id,
-                targetId: target.id,
-                distance: this.calculateDistance(viewer.position, target.position)
-            });
-            return false;
-        }
+        // if (!this.isTargetInSightRange(viewer, target)) {
+        //     this.logger.debug('Sight check failed: Target outside vision range', {
+        //         viewerId: viewer.id,
+        //         targetId: target.id,
+        //         distance: this.calculateDistance(viewer.position, target.position)
+        //     });
+        //     return false;
+        // }
 
         // Check for sight-blocking walls
         const hasLineOfSight = !this.lineOfSightChecker.isBlocked(
