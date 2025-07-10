@@ -45,4 +45,5 @@ To follow the module’s development, you can read the series here: https://hash
 ## Suggested Module
 - Enhances token vision detection and assists in identifying which tokens should display an overlay: https://github.com/dev7355608/vision-5e
 
+<img alt="GitHub Downloads (specific asset, all releases)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/module.zip?style=for-the-badge&labelColor=2A2D34&color=8C2E2E">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img alt="GitHub Downloads (specific asset, latest release)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/latest/module.zip?style=for-the-badge&labelColor=2A2D34&color=D97D26">
 
