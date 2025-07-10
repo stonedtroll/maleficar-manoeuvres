@@ -29,6 +29,10 @@ To follow the module’s development, you can read the series here: https://hash
 - **Facing Arcs**: Display token facing direction and field of view.
 - **Token Boundaries**: Visual representation of token collision boundaries.
 - **Obstacle Indicator**: While dragging, highlight the first token that would obstruct movement in real time.
+  
+<p align=center>
+    <img width="256" height="256" alt="obstacle-indicator" src="https://github.com/user-attachments/assets/da71d0d1-5990-4387-b5f1-94e840ca3a4f" />
+</p>
 
 ## Usage
 - Hold 'm' to display token boundaries and facing arcs.
