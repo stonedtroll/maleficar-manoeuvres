@@ -1,14 +1,14 @@
 import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
-export const FacingArcDefinition: OverlayDefinition = {
-  id: 'facing-arc',
-  name: 'Facing Arc',
-  description: 'Visual indication of token facing direction',
-  category: 'visual',
+export const ObstacleIndicatorDefinition: OverlayDefinition = {
+  id: 'obstacle-indicator',
+  name: 'Obstacle Indicator',
+  description: 'Displays visual indicators on tokens that act as movement blockers',
+  category: 'gameplay',
   enabledByDefault: true,
   visibleOnStart: false,
   renderTarget: 'world',
-  
+
   permissions: {
     requireLOS: true,
     requireGM: false,
@@ -26,16 +26,16 @@ export const FacingArcDefinition: OverlayDefinition = {
   triggers: {
     tokenHover: false,
     tokenSelect: false,
-    tokenDrag: true,
-    keyPress: ['m']
+    tokenDrag: false,
+    keyPress: []
   },
 
   updateOn: {
-    tokenMove: true,
-    tokenRotate: true,
+    tokenMove: false,
+    tokenRotate: false,
     tokenElevation: false,
-    visionChange: true,
-    wallChange: true,
+    visionChange: false,
+    wallChange: false,
     gridChange: false
   }
 };

@@ -24,7 +24,7 @@ import type {
   TokenCreateEvent,
   TokenDeleteEvent,
   TokenDragStartEvent,
-  TokenDraggingEvent,
+  TokenDragMoveEvent,
   TokenDragEndEvent,
   TokenDragCancelEvent,
   TokenSelectedEvent,
@@ -84,7 +84,7 @@ export interface EventMap {
 
   // Token interaction
   'token:dragStart': TokenDragStartEvent;
-  'token:dragging': TokenDraggingEvent;
+  'token:dragMove': TokenDragMoveEvent;
   'token:dragEnd': TokenDragEndEvent;
   'token:dragCancel': TokenDragCancelEvent;
   'token:selected': TokenSelectedEvent;

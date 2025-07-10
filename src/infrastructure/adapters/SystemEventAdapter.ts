@@ -46,11 +46,22 @@ import type {
   TokensReadyEvent
 } from '../events/FoundryEvents.js';
 import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
+import type { DispositionValue } from '../..//domain/constants/TokenDisposition.js';
+
+// export interface TokenDragState {
+//   token: Token;
+//   isDragging: boolean;
+//   startPosition: { x: number; y: number; elevation?: number };
+//   currentPosition: { x: number; y: number; elevation?: number };
+//   dragStartTime: number;
+//   lastUpdate: number;
+// }
 
 export class SystemEventAdapter implements InitialisableService {
   private readonly logger: FoundryLogger;
   private readonly registeredHooks: Map<string, number> = new Map();
   private isInitialised = false;
+  private currentlyDragging = false;
 
   constructor(private readonly eventBus: EventBus) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.SystemEventAdapter`, { moduleIdColour: 'green' });
@@ -304,13 +315,13 @@ export class SystemEventAdapter implements InitialisableService {
       visible: token.visible ?? true,
       controlled: token.controlled ?? false,
       ownedByCurrentUser: token.isOwner ?? false,
-      disposition: token.document?.disposition ?? 0
+      disposition: (token.document?.disposition ?? CONST.TOKEN_DISPOSITIONS.NEUTRAL) as DispositionValue
     };
   }
 
   private isUnconstrainedMovementEnabled(): boolean {
     const unconstrainedMovementTool = ui.controls?.tools?.unconstrainedMovement;
-    
+
     if (!unconstrainedMovementTool) {
       return false;
     }
@@ -375,9 +386,134 @@ export class SystemEventAdapter implements InitialisableService {
     if (token.border) {
       token.border.clear();
     }
-    this.eventBus.emit('token:refresh', { token, flags: flags || {} });
+
+    const previewToken = canvas.tokens.preview.children.find(p => p.id === token.id);
+    const controlledTokens = canvas.tokens?.controlled || [];
+    if (controlledTokens.length === 0 && token.id !== controlledTokens[0]?.id) {
+      return;
+    }
+    if (previewToken) {
+      if (!this.currentlyDragging) {
+        this.logger.debug('Drag starting detected', {
+          tokenId: token.id,
+          tokenName: token.name
+        });
+        this.currentlyDragging = true;
+        this.handleDragStart(token, previewToken);
+      } else if (this.currentlyDragging) {
+        this.handleDragMove(token, previewToken);
+      }
+    } else if (this.currentlyDragging) {
+        this.logger.debug('Drag ending detected', {
+          tokenId: token.id,
+          tokenName: token.name
+        });
+        this.currentlyDragging = false;
+        this.handleDragEnd(token);
+    }
   }
 
+ /**
+   * Handle drag start detected by polling
+   */
+  private handleDragStart(token: Token, previewToken: Token): void {
+
+    const controlledToken = this.extractTokenState(token);
+    const placeableTokens: TokenState[] = [];
+    if (canvas?.ready && canvas.tokens?.placeables) {
+      for (const t of canvas.tokens.placeables) {
+        if (t && t.id) { 
+          try {
+            placeableTokens.push(this.extractTokenState(t));
+          } catch (error) {
+            this.logger.warn('Failed to extract token info', {
+              tokenId: t.id,
+              error: error as Error
+            });
+          }
+        }
+      }
+    }
+
+    this.eventBus.emit('token:dragStart', {
+      controlledToken: controlledToken,
+      dragPosition:  previewToken.position,
+      dragElevation: previewToken.elevation,
+      placeableTokens: placeableTokens,
+      user: {
+        id: game.user?.id ?? '',
+        colour: game.user?.colour ?? '',  
+        isGM: game.user?.isGM ?? false
+      }
+    });
+  }
+
+  /**
+   * Handle drag movement detected by polling
+   */
+  private handleDragMove(token: Token, previewToken: Token): void {
+
+    const controlledToken = this.extractTokenState(token);
+    const dragPosition = previewToken.position;
+    const placeableTokens: TokenState[] = [];
+    if (canvas?.ready && canvas.tokens?.placeables) {
+      for (const t of canvas.tokens.placeables) {
+        if (t && t.id) { 
+          try {
+            placeableTokens.push(this.extractTokenState(t));
+          } catch (error) {
+            this.logger.warn('Failed to extract token info', {
+              tokenId: t.id,
+              error: error as Error
+            });
+          }
+        }
+      }
+    }
+
+    this.eventBus.emit('token:dragMove', {
+      controlledToken: controlledToken,
+      dragPosition: dragPosition,
+      dragElevation: previewToken.elevation,
+      placeableTokens: placeableTokens,
+      user: {
+        id: game.user?.id ?? '',
+        colour: game.user?.colour ?? '',  
+        isGM: game.user?.isGM ?? false
+      }
+    });
+  }
+
+  /**
+   * Handle drag end detected by polling
+   */
+  private handleDragEnd(token: Token): void {
+    // const state = this.dragStates.get(token.id);
+    // if (!state) return;
+
+    // At drag end, use token.x/y for the final rendered position
+    const finalPosition = { x: token.x, y: token.y };
+    const worldPos = canvas.mousePosition || finalPosition;
+
+    this.eventBus.emit('token:dragEnd', {
+      id: token.id,
+      position: finalPosition,
+      worldPosition: { x: worldPos.x, y: worldPos.y },
+      screenPosition: { x: 0, y: 0 },
+      // totalDelta: {
+      //   x: finalPosition.x - state.startPosition.x,
+      //   y: finalPosition.y - state.startPosition.y
+      // },
+            totalDelta: {
+        x: finalPosition.x ,
+        y: finalPosition.y
+      },
+      prevented: false
+    });
+
+    // this.dragStates.delete(token.id);
+    // this.lastDragPosition = null;
+  }
   // Scene Event Handlers
 
   private handlePreUpdateScene(

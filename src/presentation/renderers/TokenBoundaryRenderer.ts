@@ -35,10 +35,6 @@ export class TokenBoundaryRenderer {
     const dashLength = context.boundary?.dashLength ?? 5;
     const gapLength = context.boundary?.gapLength ?? 5;
 
-    /*     // Use token's bounds for radius calculation
-        const baseRadius = Math.max(token.w, token.h) / 2;
-        const fillRadius = baseRadius - borderLineWidth / 2; */
-
     this.logger.debug('Rendering token boundary', {
       borderLineWidth,
       borderColour,

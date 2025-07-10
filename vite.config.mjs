@@ -5,81 +5,95 @@ import path from 'path';
 
 // Function to copy directory recursively
 function copyDir(src, dest) {
-	if (!fs.existsSync(dest)) {
-		fs.mkdirSync(dest, { recursive: true });
-	}
+    if (!fs.existsSync(dest)) {
+        fs.mkdirSync(dest, { recursive: true });
+    }
 
-	const entries = fs.readdirSync(src, { withFileTypes: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
 
-	for (const entry of entries) {
-		const srcPath = path.join(src, entry.name);
-		const destPath = path.join(dest, entry.name);
+    for (const entry of entries) {
+        const srcPath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
 
-		if (entry.isDirectory()) {
-			copyDir(srcPath, destPath);
-		} else {
-			fs.copyFileSync(srcPath, destPath);
-		}
-	}
+        if (entry.isDirectory()) {
+            copyDir(srcPath, destPath);
+        } else {
+            fs.copyFileSync(srcPath, destPath);
+        }
+    }
 }
 
 /** @type {import('vite').UserConfig} */
 const config = {
-	plugins: [
-		svelte(),
-		// Custom plugin to copy templates directory
-		{
-			name: 'copy-templates',
-			closeBundle() {
-				// Copy templates folder
-				const templatesDir = resolve('templates');
-				const destTemplatesDir = resolve('dist', 'templates');
+    plugins: [
+        svelte(),
+        // Custom plugin to copy required directories
+        {
+            name: 'copy-static-assets',
+            closeBundle() {
+                // Copy templates folder
+                const templatesDir = resolve('templates');
+                const destTemplatesDir = resolve('dist', 'templates');
 
-				if (fs.existsSync(templatesDir)) {
-					copyDir(templatesDir, destTemplatesDir);
-					console.log('Templates directory copied to dist/templates');
-				}
+                if (fs.existsSync(templatesDir)) {
+                    copyDir(templatesDir, destTemplatesDir);
+                    console.log('Templates directory copied to dist/templates');
+                }
 
-				// Copy lang folder
-				const langDir = resolve('lang');
-				const destLangDir = resolve('dist', 'lang');
+                // Copy lang folder
+                const langDir = resolve('lang');
+                const destLangDir = resolve('dist', 'lang');
 
-				if (fs.existsSync(langDir)) {
-					copyDir(langDir, destLangDir);
-					console.log('Language directory copied to dist/lang');
-				}
+                if (fs.existsSync(langDir)) {
+                    copyDir(langDir, destLangDir);
+                    console.log('Language directory copied to dist/lang');
+                }
 
-				// Copy module.json
-				fs.copyFileSync(resolve('module.json'), resolve('dist', 'module.json'));
-				console.log('module.json copied to dist/');
-			}
-		}
-	], build: {
-		lib: {
-			entry: resolve('src', 'index.ts'),
-			name: 'MaleficarManoeuvres',
-			formats: ['iife'],
-			fileName: () => 'module.js',
-		},
-		outDir: 'dist',
-		emptyOutDir: true,
-		rollupOptions: {
-			external: ['pixi.js'],
-			output: {
-				globals: {
-					'pixi.js': 'PIXI'
-				},
-				assetFileNames: (assetInfo) => {
-					const name = assetInfo?.fileName || '';
-					if (name.endsWith('.css')) {
-						return 'modules.css';
-					}
-					return '[name][extname]';
-				},
-			},
-		},
-	},
-	publicDir: 'public'
+                // Copy assets folder (including your obstacle-indicator.webp)
+                const assetsDir = resolve('assets');
+                const destAssetsDir = resolve('dist', 'assets');
+
+                if (fs.existsSync(assetsDir)) {
+                    copyDir(assetsDir, destAssetsDir);
+                    console.log('Assets directory copied to dist/assets');
+                } else {
+                    console.warn('⚠ Warning: assets directory not found');
+                }
+
+                // Copy module.json
+                fs.copyFileSync(resolve('module.json'), resolve('dist', 'module.json'));
+                console.log('module.json copied to dist/');
+            }
+        }
+    ],
+    build: {
+        lib: {
+            entry: resolve('src', 'index.ts'),
+            name: 'MaleficarManoeuvres',
+            formats: ['iife'],
+            fileName: () => 'module.js',
+        },
+        outDir: 'dist',
+        emptyOutDir: true,
+        rollupOptions: {
+            external: ['pixi.js'],
+            output: {
+                globals: {
+                    'pixi.js': 'PIXI'
+                },
+                assetFileNames: (assetInfo) => {
+                    const name = assetInfo?.fileName || '';
+                    if (name.endsWith('.css')) {
+                        return 'modules.css';
+                    }
+                    return '[name][extname]';
+                },
+            },
+        },
+    },
+    // Configure asset handling for WebP and other image formats
+    assetsInclude: ['**/*.webp', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg'],
+    publicDir: 'public'
 };
 
 export default config;

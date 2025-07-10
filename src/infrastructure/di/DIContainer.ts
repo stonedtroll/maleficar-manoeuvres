@@ -121,6 +121,7 @@ export class DIContainer {
         overlayRegistry,
         overlayPermissionCoordinator,
         overlayContextBuilderRegistry,  
+        movementValidator,
         eventBus
       );
 

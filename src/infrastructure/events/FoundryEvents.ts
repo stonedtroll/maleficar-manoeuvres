@@ -47,7 +47,7 @@ export interface TokenState {
   // Core identification
   id: string;
   name: string;
-  
+
   // Position and dimensions
   x: number;
   y: number;
@@ -56,13 +56,13 @@ export interface TokenState {
   width: number;
   height: number;
   scale: number;
-  
+
   // Visibility and control
   hidden: boolean;
   visible: boolean;
   controlled: boolean;
   ownedByCurrentUser: boolean;
-  
+
   // Game mechanics
   disposition: DispositionValue;
 }
@@ -127,12 +127,9 @@ export interface TokenDeleteEvent {
 
 // Token Drag Events
 export interface TokenDragStartEvent {
-  id: string
-  currentState: TokenState;
-  position: { x: number; y: number };
-  worldPosition: { x: number; y: number };
-  screenPosition: { x: number; y: number };
-  prevented: boolean;
+  controlledToken: TokenState;
+  dragPosition: { x: number; y: number };
+  dragElevation: number;
   placeableTokens: TokenState[];
   user: {
     id: string;
@@ -141,18 +138,10 @@ export interface TokenDragStartEvent {
   }
 }
 
-export interface TokenDraggingEvent {
-  id: string
-  currentState: TokenState;
-  worldPosition: { x: number; y: number };
-  screenPosition: { x: number; y: number };
-  startPosition: {
-    x: number;
-    y: number;
-    worldX: number;
-    worldY: number;
-  };
-  prevented: boolean;
+export interface TokenDragMoveEvent {
+  controlledToken: TokenState;
+  dragPosition: { x: number; y: number; elevation?: number };
+  dragElevation: number;
   placeableTokens: TokenState[];
   user: {
     id: string;

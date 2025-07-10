@@ -1,11 +1,12 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
 import type { GridlessToken } from '../../../domain/entities/GridlessToken.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
+import { MODULE_ID } from '../../../config.js';
 
 /**
- * Context builder for token boundary overlays.
+ * Context builder for obstacle indicator overlays.
  */
-export class TokenBoundaryContextBuilder implements OverlayContextBuilder {
+export class ObstacleIndicatorContextBuilder implements OverlayContextBuilder {
   buildContext(
     token: GridlessToken,
     options: {
@@ -17,8 +18,9 @@ export class TokenBoundaryContextBuilder implements OverlayContextBuilder {
   ): OverlayRenderContext {
     
     return {
-      overlayTypeId: 'token-boundary',
+      overlayTypeId: 'obstacle-indicator',
       renderTarget: 'world',
+      zIndex: 1000, 
       overlayCentre: {
         x: token.centre.x,
         y: token.centre.y
@@ -38,18 +40,15 @@ export class TokenBoundaryContextBuilder implements OverlayContextBuilder {
         },
         radius: token.radius
       },
-      boundary: {
-        borderLineWidth: 2,
-        borderColour: '#4A2A1F',
-        borderOpacity: 0.8,
-        borderRadius: token.radius,
-        fillColour: '#2A3A28',
-        fillOpacity: 0.1,
-        fillRadius: token.radius - 2,
-        boundaryStyle: 'circle',
-        dashed: false,
-        dashLength: 0,
-        gapLength: 0
+      obstacle: {
+        imagePath: `modules/${MODULE_ID}/assets/images/overlays/obstacle-indicator.webp`,
+        width: token.width,
+        height: token.height,
+        opacity: 1,
+        tintColour: '#FFFFFF',
+        rotation: 0,
+        blendMode: 'normal',
+        maintainAspectRatio: true
       },
       user: {
         isGM: options.isGM

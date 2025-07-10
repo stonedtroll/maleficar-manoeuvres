@@ -103,6 +103,29 @@ interface BoundaryContext {
   gapLength: number;
 }
 
+interface ObstacleContext {
+  /** Image path for the obstacle indicator */
+  imagePath: string;
+
+  /** Opacity of the obstacle indicator */
+  opacity: number;
+
+  /** Tint colour applied to the obstacle indicator */
+  tintColour: string;
+
+  /** Rotation angle of the obstacle indicator in degrees */
+  rotation: number;
+
+  /** Blend mode for rendering the obstacle indicator */
+  blendMode: string;
+
+  width: number;
+
+  height: number;
+
+  maintainAspectRatio: boolean;
+}
+
 /**
  * Movement context for movement-based overlays.
  */
@@ -153,7 +176,7 @@ type RenderPriority = 'low' | 'normal' | 'high';
 /**
  * Render target types.
  */
-type RenderTarget = 'canvas' | 'token';
+export type RenderTarget = 'world' | 'mesh';
 
 /**
  * Context data passed to overlay render functions.
@@ -169,6 +192,8 @@ export interface OverlayRenderContext {
   
   /** Target container for rendering */
   renderTarget: RenderTarget;
+
+  zIndex?: number;
   
   /** Token information */
   token: TokenInfo;
@@ -178,6 +203,8 @@ export interface OverlayRenderContext {
   
   /** Boundary visualisation context */
   boundary?: BoundaryContext;
+
+  obstacle?: ObstacleContext;
   
   /** Movement context for movement-based overlays */
   movement?: MovementContext;

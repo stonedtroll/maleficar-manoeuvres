@@ -19,11 +19,13 @@
 import type { EventBus } from '../infrastructure/events/EventBus.js';
 import type { OverlayRegistry } from './registries/OverlayRegistry.js';
 import type { FoundryLogger } from '../../lib/log4foundry/log4foundry.js';
+import type { OverlayDefinition } from '../domain/interfaces/OverlayDefinition.js';
+
 import { LoggerFactory } from '../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../config.js';
 import { TokenBoundaryDefinition } from '../infrastructure/overlays/definitions/TokenBoundaryDefinition.js';
 import { FacingArcDefinition } from '../infrastructure/overlays/definitions/FacingArcDefinition.js';
-import type { OverlayDefinition } from '../domain/interfaces/OverlayDefinition.js';
+import { ObstacleIndicatorDefinition } from '../infrastructure/overlays/definitions/ObstacleIndicatorDefinition.js';
 
 export class ManoeuvreApplication {
   private readonly logger: FoundryLogger;
@@ -59,7 +61,7 @@ export class ManoeuvreApplication {
 
       this.initialised = true;
       this.logger.info('ManoeuvreApplication initialised successfully');
-      
+
     } catch (error) {
       this.logger.error('Failed to initialise application', error);
       throw error;
@@ -86,9 +88,9 @@ export class ManoeuvreApplication {
 
       // Clear application state
       this.initialised = false;
-      
+
       this.logger.info('ManoeuvreApplication teardown complete');
-      
+
     } catch (error) {
       this.logger.error('Error during application teardown', error);
       // Don't throw - best effort cleanup
@@ -108,10 +110,11 @@ export class ManoeuvreApplication {
    */
   private async registerDefaultOverlays(): Promise<void> {
     this.logger.info('Registering default overlays');
-    
+
     const overlayDefinitions: OverlayDefinition[] = [
       TokenBoundaryDefinition,
-      FacingArcDefinition
+      FacingArcDefinition,
+      ObstacleIndicatorDefinition
     ];
 
     let successCount = 0;
@@ -139,10 +142,10 @@ export class ManoeuvreApplication {
 
     // Throw if critical overlays failed to register
     if (errors.length > 0) {
-      const criticalFailure = errors.find(e => 
+      const criticalFailure = errors.find(e =>
         e.id === 'facing-arc' || e.id === 'token-boundary'
       );
-      
+
       if (criticalFailure) {
         throw new Error(`Failed to register critical overlay: ${criticalFailure.id}`);
       }
@@ -155,7 +158,7 @@ export class ManoeuvreApplication {
    */
   getStats(): Record<string, unknown> {
     const overlays = this.overlayRegistry.getAll();
-    
+
     return {
       initialised: this.initialised,
       overlays: {

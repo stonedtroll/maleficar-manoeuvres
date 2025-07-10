@@ -1,4 +1,3 @@
-
 /**
  * Overlay Rendering Service
  * 
@@ -22,6 +21,7 @@ import { OverlayRegistry } from '../../application/registries/OverlayRegistry.js
 import { OverlayContainer } from '../overlays/OverlayContainer.js';
 import { FacingArcRenderer } from '../renderers/FacingArcRenderer.js';
 import { TokenBoundaryRenderer } from '../renderers/TokenBoundaryRenderer.js';
+import { ObstacleIndicatorRenderer } from '../renderers/ObstacleIndicatorRenderer.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
@@ -126,6 +126,7 @@ export class OverlayRenderingService implements InitialisableService {
   private initialiseRenderers(): void {
     this.renderers.set('facing-arc', new FacingArcRenderer());
     this.renderers.set('token-boundary', new TokenBoundaryRenderer());
+    this.renderers.set('obstacle-indicator', new ObstacleIndicatorRenderer());
 
     this.logger.debug('Initialised overlay renderers', {
       renderers: Array.from(this.renderers.keys())
@@ -140,7 +141,7 @@ export class OverlayRenderingService implements InitialisableService {
   private createMainContainer(): void {
     this.logger.info('Creating main overlay container');
     
-    const primaryGroup = canvas!.primary;
+    const primaryGroup = canvas!.drawings;
     if (!primaryGroup) {
       throw new Error('Canvas primary group not available');
     }
@@ -231,7 +232,7 @@ export class OverlayRenderingService implements InitialisableService {
     context: OverlayRenderContext
   ): { graphics: PIXI.Graphics; parentContainer: PIXI.Container } {
     
-    if (context.renderTarget === 'token') {
+    if (context.renderTarget === 'mesh') {
       return this.prepareTokenMeshGraphics(instanceKey, context);
     } else {
       return this.prepareWorldGraphics(instanceKey, context);
@@ -275,11 +276,8 @@ export class OverlayRenderingService implements InitialisableService {
     
     const typeContainer = this.getOrCreateTypeContainer(context.overlayTypeId);
     const graphics = this.getOrCreateGraphicsInstance(instanceKey, typeContainer);
-    
-    // Position at world coordinates
-    const position = context.renderTarget === 'token' 
-      ? this.tokenMeshAdapter.getTokenCentre(context.token.id) || context.overlayCentre
-      : context.overlayCentre;
+
+    const position = context.overlayCentre;
       
     graphics.position.set(position.x, position.y);
     
@@ -295,33 +293,33 @@ export class OverlayRenderingService implements InitialisableService {
    * Get or create a graphics instance
    */
   private getOrCreateGraphicsInstance(instanceKey: string, parent: PIXI.Container): PIXI.Graphics {
-    let graphics = this.overlayInstances.get(instanceKey);
+  let graphics = this.overlayInstances.get(instanceKey);
+  
+  if (!graphics) {
+    graphics = new PIXI.Graphics();
+    graphics.name = instanceKey;
+    this.overlayInstances.set(instanceKey, graphics);
+    parent.addChild(graphics);
     
-    if (!graphics) {
-      graphics = new PIXI.Graphics();
-      graphics.name = instanceKey;
-      this.overlayInstances.set(instanceKey, graphics);
-      parent.addChild(graphics);
-      
       this.logger.debug(`Created graphics instance: ${instanceKey}`);
-    } else if (graphics.parent !== parent) {
+  } else if (graphics.parent !== parent) {
       this.reparentGraphics(graphics, parent, instanceKey);
-    }
-    
-    return graphics;
   }
+  
+  return graphics;
+}
 
   /**
    * Move graphics to a new parent container
    */
   private reparentGraphics(graphics: PIXI.Graphics, newParent: PIXI.Container, instanceKey: string): void {
-    graphics.parent?.removeChild(graphics);
-    newParent.addChild(graphics);
-    
-    this.logger.debug(`Reparented graphics instance: ${instanceKey}`, {
+  graphics.parent?.removeChild(graphics);
+  newParent.addChild(graphics);
+  
+  this.logger.debug(`Reparented graphics instance: ${instanceKey}`, {
       parent: newParent.name || newParent.constructor.name
-    });
-  }
+  });
+}
 
   // Cleanup Operations
 

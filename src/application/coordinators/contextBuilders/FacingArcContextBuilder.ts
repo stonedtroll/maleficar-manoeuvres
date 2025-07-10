@@ -32,7 +32,7 @@ export class FacingArcContextBuilder implements OverlayContextBuilder {
 
     return {
       overlayTypeId: 'facing-arc',
-      renderTarget: 'canvas',
+      renderTarget: 'world',
       overlayCentre: {
         x: token.centre.x,
         y: token.centre.y

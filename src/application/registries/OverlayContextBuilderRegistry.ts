@@ -7,6 +7,7 @@ import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 import { TokenBoundaryContextBuilder } from '../coordinators/contextBuilders/TokenBoundaryContextBuilder.js';
 import { FacingArcContextBuilder } from '../coordinators/contextBuilders/FacingArcContextBuilder.js';
+import { ObstacleIndicatorContextBuilder } from '../coordinators/contextBuilders/ObstacleIndicatorContextBuilder.js';
 
 export class OverlayContextBuilderRegistry {
   private readonly logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.OverlayContextBuilderRegistry`);
@@ -25,6 +26,9 @@ export class OverlayContextBuilderRegistry {
     
     // Facing arc context builder
     this.register('facing-arc', new FacingArcContextBuilder());
+    
+    // Obstacle indicator context builder
+    this.register('obstacle-indicator', new ObstacleIndicatorContextBuilder());
 
     this.logger.info('Default context builders registered', {
       count: this.builders.size,

@@ -75,12 +75,18 @@ export class MovementValidator {
   ): MovementValidationResult {
     const { maxDistance, ignoreElevation = false } = options;
 
+    // Early exit: Check if movement is negligible
+    const distance = ignoreElevation
+      ? start.toVector2().distanceTo(end.toVector2())
+      : start.distanceTo(end);
+
+    if (distance < 0.1) {
+      this.logger.debug('Movement negligible, early exit', { distance });
+      return { type: 'valid', position: end };
+    }
+
     // Validate distance constraint
     if (maxDistance !== undefined) {
-      const distance = ignoreElevation
-        ? start.toVector2().distanceTo(end.toVector2())
-        : start.distanceTo(end);
-
       if (distance > maxDistance) {
         return {
           type: 'invalid',
@@ -101,13 +107,10 @@ export class MovementValidator {
           return !moveable.canPassThrough(obstacle.disposition);
         });
 
-    const pathResult = this.validatePath(
-      start,
-      end,
-      moveable,
-      blockingObstacles,
-      ignoreElevation
-    );
+    // Path validation (can early exit if no blocking obstacles)
+    const pathResult = blockingObstacles.length === 0
+      ? { clear: true, lastValidPosition: end, blockers: [] }
+      : this.validatePath(start, end, moveable, blockingObstacles, ignoreElevation);
 
     if (!pathResult.clear) {
       return {
@@ -119,32 +122,13 @@ export class MovementValidator {
       };
     }
 
+    // Always validate destination using full obstacle list (ignores disposition)
     const destinationResult = this.validateDestination(moveable, end, obstacles);
 
     if (destinationResult.type === 'blocked') {
       const blockers = destinationResult.blockers ?? [];
       if (blockers.length > 0) {
-        let nearestDestinationBlocker: SpatialEntity = blockers[0]!;
-
-        if (blockers.length > 1) {
-          // Convert end position to 2D for consistent distance calculation
-          const end2D = end.toVector2();
-
-          const closestPosition = nearestDestinationBlocker.position;
-
-          let minDistance = end2D.distanceTo(closestPosition);
-
-          for (let i = 1; i < blockers.length; i++) {
-            const blocker = blockers[i]!;
-            const blockerPosition = blocker.position;
-
-            const distance = end2D.distanceTo(blockerPosition);
-            if (distance < minDistance) {
-              minDistance = distance;
-              nearestDestinationBlocker = blocker;
-            }
-          }
-        }
+        const nearestDestinationBlocker = this.findNearestBlocker(end, blockers);
 
         // Convert blocker position to Vector3 for collision points
         const blockerPosition = nearestDestinationBlocker.position;
@@ -176,33 +160,28 @@ export class MovementValidator {
     destination: Vector3,
     obstacles: SpatialEntity[]
   ): MovementValidationResult {
-    const blockers: SpatialEntity[] = [];
     const originalPosition = moveable.position;
     const originalElevation = moveable.elevation || 0;
 
     moveable.move?.(destination);
 
-    for (const obstacle of obstacles) {
-      if (this.collisionDetector.checkSingleCollision(moveable, obstacle)) {
-        blockers.push(obstacle);
-      }
-    }
+    const collisionResult = this.collisionDetector.checkCollision(moveable, obstacles);
 
     moveable.move?.(new Vector3(originalPosition.x, originalPosition.y, originalElevation));
 
-
-    this.logger.debug('Validating destination', {
-      moveable: moveable,
+    this.logger.debug('Destination validation complete', {
+      moveable: moveable.id,
       destination,
       obstacleCount: obstacles.length,
-      blockers: blockers
+      isColliding: collisionResult.isColliding,
+      blockerCount: collisionResult.collidingWith.length
     });
 
-    if (blockers.length > 0) {
+    if (collisionResult.isColliding) {
       return {
         type: 'blocked',
         reason: 'collision',
-        blockers,
+        blockers: collisionResult.collidingWith,
         collisionPoints: []
       };
     }
@@ -239,7 +218,6 @@ export class MovementValidator {
       ? start.toVector2().distanceTo(end.toVector2())
       : start.distanceTo(end);
 
-    // Optimisation: No movement, no collision
     if (distance < 0.001) {
       return {
         clear: true,
@@ -341,17 +319,14 @@ export class MovementValidator {
   private calculateStepSize(distance: number, spatialEntity: SpatialEntity): number {
     const shapeSize = this.getShapeSmallestDimension(spatialEntity.getSpatialVolume());
 
-    // Fine steps for very small movements
     if (distance < shapeSize) {
       return Math.max(MovementValidator.MIN_STEP_SIZE, distance / MovementValidator.STEP_SCALE.FINE);
     }
 
-    // Normal steps for medium movements
     if (distance < shapeSize * 5) {
       return Math.max(MovementValidator.STEP_SCALE.COARSE, shapeSize / MovementValidator.STEP_SCALE.FINE);
     }
 
-    // Coarse steps for long movements
     return Math.max(this.gridlessStepSize, shapeSize / MovementValidator.STEP_SCALE.NORMAL);
   }
 
@@ -428,5 +403,30 @@ export class MovementValidator {
       height: maxY - minY,
       depth: maxZ - minZ
     };
+  }
+
+  /**
+   * Nearest blocker finding using early exit for single blocker.
+   */
+  private findNearestBlocker(position: Vector3, blockers: SpatialEntity[]): SpatialEntity {
+    if (blockers.length === 1) {
+      return blockers[0]!;
+    }
+
+    const position2D = position.toVector2();
+    let nearestBlocker = blockers[0]!;
+    let minDistance = position2D.distanceTo(nearestBlocker.position);
+
+    for (let i = 1; i < blockers.length; i++) {
+      const blocker = blockers[i]!;
+      const distance = position2D.distanceTo(blocker.position);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestBlocker = blocker;
+      }
+    }
+
+    return nearestBlocker;
   }
 }
