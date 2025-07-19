@@ -17,22 +17,18 @@ import type {
   TokenDragStartEvent,
   TokenDragMoveEvent,
   TokenDragEndEvent,
-  TokenDragCancelEvent,
-  TokenState
+  TokenDragCancelEvent
 } from '../../infrastructure/events/FoundryEvents.js';
-import type { OverlayDefinition } from '../../domain/interfaces/OverlayDefinition.js';
-import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRenderContext.js';
+import type { OverlayDefinition, OverlayTriggers } from '../../domain/interfaces/OverlayDefinition.js';
 import type { OverlayRenderingService } from '../../presentation/services/OverlayRenderingService.js';
 import type { OverlayRegistry } from '../registries/OverlayRegistry.js';
-import type { OverlayPermissionCoordinator } from './OverlayPermissionCoordinator.js';
 import type { OverlayContextBuilderRegistry } from '../registries/OverlayContextBuilderRegistry.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
-import { GridlessToken } from '../../domain/entities/GridlessToken.js';
+import { Token } from '../../domain/entities/Token.js';
+import { Actor } from '../../domain/entities/Actor.js';
 import { OverlayCoordinatorHelper } from './helpers/OverlayCoordinatorHelper.js';
-import { TokenStateAdapter } from '../adapters/TokenStateAdapter.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
-import { Vector3 } from '../../domain/value-objects/Vector3.js';
 import { MovementValidator } from '../../domain/services/MovementValidator.js';
 import { MODULE_ID } from '../../config.js';
 import { SpatialEntity } from '../../domain/interfaces/SpatialEntity.js';
@@ -40,25 +36,21 @@ import { SpatialEntity } from '../../domain/interfaces/SpatialEntity.js';
 export class TokenDragCoordinator {
   private readonly logger: FoundryLogger;
   private readonly overlayHelper: OverlayCoordinatorHelper;
-  private readonly tokenStateAdapter: TokenStateAdapter;
   private previousBlocker: SpatialEntity | null = null;
+  private readonly dragOverlaysCache = new Map<string, Set<string>>();
 
   constructor(
     private readonly overlayRenderer: OverlayRenderingService,
     private readonly overlayRegistry: OverlayRegistry,
-    private readonly permissionCoordinator: OverlayPermissionCoordinator,
     private readonly contextBuilderRegistry: OverlayContextBuilderRegistry,
     private readonly movementValidator: MovementValidator,
-    private readonly eventBus: EventBus,
-    tokenStateAdapter?: TokenStateAdapter
+    private readonly eventBus: EventBus
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.TokenDragCoordinator`);
-    this.tokenStateAdapter = tokenStateAdapter ?? new TokenStateAdapter();
+
 
     this.overlayHelper = new OverlayCoordinatorHelper(
-      overlayRenderer,
-      permissionCoordinator,
-      this.tokenStateAdapter
+      overlayRenderer
     );
 
     this.registerEventHandlers();
@@ -71,25 +63,31 @@ export class TokenDragCoordinator {
    * Initialises drag state and displays appropriate overlays.
    */
   async handleDragStart(event: TokenDragStartEvent): Promise<void> {
-    try {
-      const { dragPosition } = event;
 
-      this.logger.debug('Token drag started', {
-        tokenId: event.controlledToken.id,
-        dragPosition: dragPosition
+    try {
+      this.logger.debug('Token dragging started', {
+        tokenId: event.dragStartTokenAdaptor.id,
       });
 
-      await this.updateObstacleIndicatorOverlays(event);
-      await this.updateDragOverlays(
-        event.placeableTokens,
+      const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
+      const dragStartToken = new Token(event.dragStartTokenAdaptor);
+      const previewToken = new Token(event.previewTokenAdapter);
+      const ownedByCurrentUserActors = event.ownedByCurrentUserActorAdapters.map(adapter => new Actor(adapter));
+
+      await this.updateObstacleIndicatorOverlays(allTokens, dragStartToken, previewToken, event.user.isGM, event.user.colour);
+      await this.updateOverlays(
+        allTokens,
+        previewToken,
+        ownedByCurrentUserActors,
         event.user.isGM,
-        event.user.colour
+        event.user.colour,
+        'tokenDragStart'
       );
 
     } catch (error) {
       this.logger.error('Error in handleDragStart', {
         error: error instanceof Error ? error.message : String(error),
-        tokenId: event.controlledToken.id
+        tokenId: event.dragStartTokenAdaptor.id
       });
     }
   }
@@ -100,16 +98,16 @@ export class TokenDragCoordinator {
    */
   async handleDragMove(event: TokenDragMoveEvent): Promise<void> {
     try {
-      this.logger.debug('Token dragging', {
-        tokenId: event.controlledToken.id,
-      });
+      const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
+      const dragStartToken = new Token(event.dragStartTokenAdaptor);
+      const previewToken = new Token(event.previewTokenAdapter);
 
-      await this.updateObstacleIndicatorOverlays(event);
+      await this.updateObstacleIndicatorOverlays(allTokens, dragStartToken, previewToken, event.user.isGM, event.user.colour);
 
     } catch (error) {
       this.logger.error('Error in handleDragMove', {
         error: error instanceof Error ? error.message : String(error),
-        tokenId: event?.controlledToken.id
+        tokenId: event?.dragStartTokenAdaptor.id
       });
     }
   }
@@ -146,46 +144,61 @@ export class TokenDragCoordinator {
     }
   }
 
+  private filterObstacles(obstacles: SpatialEntity[], movingTokenId?: string): SpatialEntity[] {
+    return obstacles.filter(obstacle => {
+      // Exclude the moving token itself
+      if (movingTokenId && obstacle.id === movingTokenId) {
+        return false;
+      }
+
+      const isHidden = (obstacle as any).hidden;
+      const isVisible = (obstacle as any).visible;
+
+      // If it has a hidden property and it's true, exclude it
+      if (isHidden === true) {
+        return false;
+      }
+
+      // If it has a visible property and it's false, exclude it
+      if (isVisible === false) {
+        return false;
+      }
+
+      // Default to visible
+      return true;
+    });
+  }
+
   /**
  * Validates movement using MovementValidator and updates obstacle overlays
  */
   private async updateObstacleIndicatorOverlays(
-    event: TokenDragStartEvent | TokenDragMoveEvent
+    allTokens: Token[],
+    dragStartToken: Token,
+    previewToken: Token,
+    isGM: boolean,
+    userColour: string
   ): Promise<void> {
     try {
-      const movingToken = this.tokenStateAdapter.toGridlessToken(event.controlledToken);
-      const obstacles = this.prepareObstacles(movingToken.id, event.placeableTokens);
 
-      const startPosition = new Vector3(
-        event.controlledToken.x,
-        event.controlledToken.y,
-        event.controlledToken.elevation || 0
-      );
-
-      const dragPosition = new Vector3(
-        event.dragPosition.x,
-        event.dragPosition.y,
-        event.dragElevation || 0
-      );
+      const filteredObstacles = this.filterObstacles(allTokens, dragStartToken.id);
 
       const validationResult = this.movementValidator.validateMovement(
-        movingToken,
-        startPosition,
-        dragPosition,
-        obstacles
+        dragStartToken,
+        previewToken,
+        filteredObstacles
       );
 
       const currentBlocker = validationResult.blockers?.[0] ?? null;
 
       if (currentBlocker && validationResult.type === 'blocked') {
-        await this.handleObstacleDetected(currentBlocker, movingToken, event);
+        await this.handleObstacleDetected(currentBlocker, isGM, userColour);
       } else if (validationResult.type !== 'ignored') {
         await this.handleObstacleClear();
       }
 
     } catch (error) {
       this.logger.error('Error validating movement and updating overlays', {
-        tokenId: event.controlledToken.id,
         error: error instanceof Error ? error.message : String(error)
       });
     }
@@ -197,8 +210,8 @@ export class TokenDragCoordinator {
    */
   private async handleObstacleDetected(
     currentBlocker: SpatialEntity,
-    movingToken: GridlessToken,
-    event: TokenDragStartEvent | TokenDragMoveEvent
+    isGM: boolean,
+    userColour: string,
   ): Promise<void> {
     if (this.previousBlocker?.id === currentBlocker.id) {
       return;
@@ -206,10 +219,9 @@ export class TokenDragCoordinator {
 
     await this.clearObstacleIndicatorOverlays();
     await this.renderObstacleIndicatorOverlays(
-      [movingToken],
-      currentBlocker as GridlessToken,
-      event.user.isGM,
-      event.user.colour
+      currentBlocker as Token,
+      isGM,
+      userColour
     );
 
     this.previousBlocker = currentBlocker;
@@ -229,27 +241,10 @@ export class TokenDragCoordinator {
   }
 
   /**
-   * Prepares obstacles for collision detection.
-   * Filters out hidden tokens and the moving token itself.
-   */
-  private prepareObstacles(
-    movingTokenId: string,
-    placeableTokens: TokenState[]
-  ) {
-    return placeableTokens
-      .filter(token =>
-        token.id !== movingTokenId &&
-        !token.hidden
-      )
-      .map(token => this.tokenStateAdapter.toGridlessToken(token));
-  }
-
-  /**
    * Renders obstacle indicator overlay on a specific token
    */
   private async renderObstacleIndicatorOverlays(
-    controlled: GridlessToken[],
-    obstacle: GridlessToken,
+    obstacle: Token,
     isGM: boolean,
     userColour: string
   ): Promise<void> {
@@ -260,7 +255,7 @@ export class TokenDragCoordinator {
         return;
       }
 
-      const overlaysWithContextBuilders = this.prepareOverlaysWithContextBuilders([obstacleIndicatorOverlay]);
+      const overlaysWithContextBuilders = this.overlayHelper.prepareOverlaysWithContextBuilders([obstacleIndicatorOverlay], this.contextBuilderRegistry);
 
       if (overlaysWithContextBuilders.length === 0) {
         this.logger.warn('No context builder available for obstacle indicator overlay');
@@ -268,14 +263,20 @@ export class TokenDragCoordinator {
       }
 
       await this.overlayHelper.requestOverlayRendering(
-        controlled,
-        [],
         [obstacle],
         overlaysWithContextBuilders,
         isGM,
         (overlayId, targetToken, isGM) =>
-          this.buildContextForOverlay(overlayId, targetToken, isGM, userColour, overlaysWithContextBuilders)
+          this.overlayHelper.buildContextForOverlay(
+            overlayId,
+            targetToken,
+            isGM,
+            userColour,
+            overlaysWithContextBuilders,
+            this.contextBuilderRegistry
+          )
       );
+
     } catch (error) {
       this.logger.error('Error rendering obstacle indicator', {
         tokenId: obstacle.id,
@@ -310,104 +311,38 @@ export class TokenDragCoordinator {
     this.logger.debug('Drag event handlers registered');
   }
 
-  /**
-   * Updates overlays during drag operations.
-   * Only processes overlays configured for drag triggers.
-   */
-  private async updateDragOverlays(
-    placeableTokens: TokenState[],
+  private async updateOverlays(
+    allTokens: Token[],
+    previewToken: Token,
+    ownedActors: Actor[],
     isGM: boolean,
-    userColour: string
+    userColour: string,
+    trigger: keyof OverlayTriggers
   ): Promise<void> {
-    const dragOverlays = this.overlayRegistry.getAll()
-      .filter(overlay => overlay.triggers?.tokenDrag === true);
+
+    const dragOverlays = this.overlayRegistry.filterByTrigger(
+      trigger
+    );
 
     if (dragOverlays.length === 0) {
       return;
     }
 
-    const { controlled, owned, targetTokens } = this.overlayHelper.categoriseTokensForOverlayRendering(
-      placeableTokens,
-      { includeAll: true }
-    );
-
-    this.logger.debug('Updating drag overlays', {
-      dragOverlayCount: dragOverlays.length,
-      targetTokenCount: targetTokens.length
-    });
-
-    const overlaysWithContextBuilders = this.prepareOverlaysWithContextBuilders(dragOverlays);
-
-    await this.overlayHelper.requestOverlayRendering(
-      controlled,
-      owned,
-      targetTokens,
-      overlaysWithContextBuilders,
-      isGM,
-      (overlayId, targetToken, isGM) =>
-        this.buildContextForOverlay(overlayId, targetToken, isGM, userColour, overlaysWithContextBuilders)
-    );
-  }
-
-  /**
-   * Prepares overlays with their context builders.
-   */
-  private prepareOverlaysWithContextBuilders(overlays: OverlayDefinition[]): OverlayDefinition[] {
-    return overlays.map(overlay => {
-      if (!overlay.contextBuilder) {
-        const builder = this.getContextBuilder(overlay);
-        if (builder) {
-          return { ...overlay, contextBuilder: builder };
-        }
-        this.logger.warn(`No context builder found for overlay ${overlay.id}`, {
-          overlayId: overlay.id,
-          registryHasBuilder: this.contextBuilderRegistry.get(overlay.id) !== undefined,
-          availableBuilders: Array.from(this.contextBuilderRegistry.getAll().keys())
-        });
-      }
-      return overlay;
-    }).filter(overlay => overlay.contextBuilder);
-  }
-
-  /**
-   * Builds context for a specific overlay.
-   * This method is called by OverlayCoordinatorHelper after permission checks.
-   */
-  private buildContextForOverlay(
-    overlayId: string,
-    targetToken: GridlessToken,
-    isGM: boolean,
-    userColour: string,
-    overlaysWithBuilders: OverlayDefinition[]
-  ): OverlayRenderContext {
-    const overlay = overlaysWithBuilders.find(o => o.id === overlayId);
-    const contextBuilder = overlay?.contextBuilder || this.getContextBuilder({ id: overlayId } as OverlayDefinition);
-
-    if (!contextBuilder) {
-      throw new Error(`No context builder found for overlay ${overlayId}`);
-    }
-
-    return contextBuilder.buildContext(targetToken, {
+    // Process overlays by scope and render them
+    const overlayGroups = await this.overlayHelper.processOverlaysByScope(
+      dragOverlays,
+      allTokens,
       isGM,
       userColour,
-      isControlled: targetToken.controlled,
-    });
-  }
+      this.contextBuilderRegistry,
+      trigger,
+      ownedActors,
+      previewToken
+    );
 
-  /**
-   * Gets the appropriate context builder for an overlay.
-   */
-  private getContextBuilder(overlay: OverlayDefinition) {
-    if (overlay.contextBuilder) {
-      return overlay.contextBuilder;
+    for (const { targetTokens, overlays } of overlayGroups) {
+      this.trackDragOverlays(targetTokens, overlays);
     }
-
-    const builder = this.contextBuilderRegistry.get(overlay.id);
-    if (builder) {
-      return builder;
-    }
-
-    return this.contextBuilderRegistry.get('boundary-standard');
   }
 
   /**
@@ -424,26 +359,97 @@ export class TokenDragCoordinator {
   /**
    * Hides all drag-triggered overlays.
    */
-  private async hideAllDragOverlays(): Promise<void> {
-    try {
-      const dragOverlays = this.overlayRegistry.getAll()
-        .filter(overlay => overlay.triggers?.tokenDrag === true);
+  // private async hideAllDragOverlays(): Promise<void> {
+  //   try {
+  //     const dragOverlays = this.overlayRegistry.getAll()
+  //       .filter(overlay => overlay.triggers?.tokenDrag === true);
 
-      if (dragOverlays.length === 0) {
-        return;
-      }
+  //     if (dragOverlays.length === 0) {
+  //       return;
+  //     }
 
-      this.logger.debug('Hiding all drag overlays', {
-        dragOverlayCount: dragOverlays.length
-      });
+  //     this.logger.debug('Hiding all drag overlays', {
+  //       dragOverlayCount: dragOverlays.length
+  //     });
 
-      for (const overlay of dragOverlays) {
-        this.overlayRenderer.hideAllOverlaysOfType(overlay.id);
-      }
-    } catch (error) {
-      this.logger.error('Error hiding drag overlays', {
-        error: error instanceof Error ? error.message : String(error)
-      });
+  //     for (const overlay of dragOverlays) {
+  //       this.overlayRenderer.hideAllOverlaysOfType(overlay.id);
+  //     }
+  //   } catch (error) {
+  //     this.logger.error('Error hiding drag overlays', {
+  //       error: error instanceof Error ? error.message : String(error)
+  //     });
+  //   }
+  // }
+
+  /**
+ * Tracks drag overlays for efficient cleanup when key is released.
+ */
+  private trackDragOverlays(
+    targetTokens: Token[],
+    overlays: OverlayDefinition[]
+  ): void {
+    const overlayIds = new Set(overlays.map(overlay => overlay.id));
+
+    for (const token of targetTokens) {
+      if (overlayIds.size === 0) continue;
+
+      // Merge with existing tracked overlays for this token
+      const existingOverlays = this.dragOverlaysCache.get(token.id) ?? new Set<string>();
+      const combinedOverlays = new Set([...existingOverlays, ...overlayIds]);
+
+      this.dragOverlaysCache.set(token.id, combinedOverlays);
     }
+
+    this.logger.debug('Drag overlays tracked', {
+      dragOverlaysSize: this.dragOverlaysCache.size,
+      dragOverlaysEntries: Array.from(this.dragOverlaysCache.entries()).map(
+        ([tokenId, overlayIds]) => ({
+          tokenId,
+          overlayIds: Array.from(overlayIds)
+        })
+      )
+    });
+  }
+
+  /**
+   * Hides all M-key overlays and clears tracking cache.
+   */
+  private async hideAllDragOverlays(): Promise<void> {
+    this.logger.debug('Hiding drag overlays', {
+      tokenCount: this.dragOverlaysCache.size
+    });
+
+    const overlayTypesToHide = this.collectUniqueOverlayTypes();
+
+    this.logger.debug('Drag overlay types to hide', {
+      overlayTypes: Array.from(overlayTypesToHide),
+      dragOverlaysSize: this.dragOverlaysCache.size,
+      dragOverlaysEntries: Array.from(this.dragOverlaysCache.entries()).map(
+        ([tokenId, overlayIds]) => ({
+          tokenId,
+          overlayIds: Array.from(overlayIds)
+        })
+      )
+    });
+
+    for (const overlayTypeId of overlayTypesToHide) {
+      this.overlayRenderer.hideAllOverlaysOfType(overlayTypeId);
+    }
+
+    this.dragOverlaysCache.clear();
+  }
+
+  /**
+   * Collects all unique overlay type IDs from the tracking cache.
+   */
+  private collectUniqueOverlayTypes(): Set<string> {
+    const uniqueTypes = new Set<string>();
+
+    for (const overlayIds of this.dragOverlaysCache.values()) {
+      overlayIds.forEach(id => uniqueTypes.add(id));
+    }
+
+    return uniqueTypes;
   }
 }

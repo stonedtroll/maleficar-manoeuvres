@@ -1,18 +1,18 @@
 import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
-export const ObstacleIndicatorDefinition: OverlayDefinition = {
-  id: 'obstacle-indicator',
-  name: 'Obstacle Indicator',
-  description: 'Displays visual indicators on tokens that act as movement blockers',
-  category: 'gameplay',
+export const ActorInfoDefinition: OverlayDefinition = {
+  id: 'actor-info',
+  name: 'Actor Information',
+  description: 'Displays actor statistics and status information',
+  category: 'information',
   enabledByDefault: true,
   visibleOnStart: false,
   renderTarget: 'world',
 
   permissions: {
-    requireLOS: true,
+    requireLOS: false,
     requireGM: false,
-    requireOwnership: false,
+    requireOwnership: true,
     requireControl: false
   },
 
@@ -24,6 +24,13 @@ export const ObstacleIndicatorDefinition: OverlayDefinition = {
   },
 
   triggers: {
+    tokenDragStart: {
+      scope: 'controlled'
+    },
+    keyPress: {
+      keys: ['m'],
+      scope: 'owned'
+    }
   },
 
   updateOn: {
@@ -31,6 +38,7 @@ export const ObstacleIndicatorDefinition: OverlayDefinition = {
     tokenRotate: false,
     visionChange: false,
     wallChange: false,
-    gridChange: false
+    gridChange: false,
+
   }
 };

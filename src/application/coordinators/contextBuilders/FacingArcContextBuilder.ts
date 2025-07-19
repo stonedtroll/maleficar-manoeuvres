@@ -1,5 +1,5 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
-import type { GridlessToken } from '../../../domain/entities/GridlessToken.js';
+import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
 import { DISPOSITION } from '../../../domain/constants/TokenDisposition.js';
 
@@ -13,20 +13,20 @@ const DISPOSITION_COLOURS = {
   [DISPOSITION.FRIENDLY]: '#4D5D43'  // Olive green
 } as const;
 
-const DEFAULT_ARC_COLOUR = '#8A6A1C'; 
+const DEFAULT_ARC_COLOUR = '#8A6A1C';
+
+interface FacingArcContextOptions {
+  isGM?: boolean;
+  userColour?: string;
+}
 
 /**
  * Context builder for facing arc overlays.
  */
-export class FacingArcContextBuilder implements OverlayContextBuilder {
+export class FacingArcContextBuilder implements OverlayContextBuilder<FacingArcContextOptions> {
   buildContext(
-    token: GridlessToken,
-    options: {
-      isGM: boolean;
-      userColour?: string;
-      activeKeys?: Set<string>;
-      [key: string]: any;
-    }
+    token: Token,
+    options: FacingArcContextOptions
   ): OverlayRenderContext {
     const arcColour = this.determineArcColour(token, options.userColour);
 
@@ -59,7 +59,7 @@ export class FacingArcContextBuilder implements OverlayContextBuilder {
         arcAngle: 20
       },
       user: {
-        isGM: options.isGM
+        isGM: options.isGM ?? false
       }
     };
   }
@@ -67,8 +67,8 @@ export class FacingArcContextBuilder implements OverlayContextBuilder {
   /**
    * Determines the arc colour based on token control state and disposition.
    */
-  private determineArcColour(token: GridlessToken, userColour?: string): string {
-    if (token.controlled && userColour) {
+  private determineArcColour(token: Token, userColour?: string): string {
+    if (token.isControlledByCurrentUser && userColour) {
       return userColour;
     }
 

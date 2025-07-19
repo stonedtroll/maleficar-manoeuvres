@@ -24,16 +24,18 @@ export const FacingArcDefinition: OverlayDefinition = {
   },
 
   triggers: {
-    tokenHover: false,
-    tokenSelect: false,
-    tokenDrag: true,
-    keyPress: ['m']
+    tokenDragStart: {
+      scope: 'visible-and-not-hidden'
+    },
+    keyPress: {
+      keys: ['m'],
+      scope: 'visible-and-not-hidden'
+    }
   },
 
   updateOn: {
     tokenMove: true,
     tokenRotate: true,
-    tokenElevation: false,
     visionChange: true,
     wallChange: true,
     gridChange: false

@@ -3,7 +3,8 @@ export const MODULE_NAME = 'Maleficar Manoeuvres';
 export const MODULE_ABBR = 'MM';
 
 export const SETTINGS = {
-  LOG_LEVEL: 'logLevel'
+  LOG_LEVEL: 'logLevel',
+  TOKEN_BORDER_INDICATOR: 'tokenBorderIndicator',
 } as const;
 
 export const LOG_LEVEL_CHOICES = {
@@ -19,7 +20,7 @@ export const CONSTANTS = {
   MODULE_ID,
   MODULE_NAME,
   MODULE_ABBR,
-  
+
   FLAGS: {
     ELEVATION: 'elevation',
     HEIGHT: 'height',
@@ -27,7 +28,7 @@ export const CONSTANTS = {
     BLOCKING: 'blocking',
     WALL_HEIGHT: 'wallHeight'
   },
-  
+
   DEFAULTS: {
     SCENE_CEILING: 4000,
     TOKEN_HEIGHT: 100,
@@ -35,7 +36,7 @@ export const CONSTANTS = {
     MAX_STEP_HEIGHT: 50,
     GRID_SIZE: 100
   },
-  
+
   COLOURS: {
     BOUNDARY_HOVER: 0x00ff00,
     BOUNDARY_SELECTED: 0x0088ff,
@@ -45,28 +46,37 @@ export const CONSTANTS = {
     ELEVATION: 0xff00ff,
     FACING_ARC: 0x8A6A1C
   },
-  
+
   ALPHA: {
     BOUNDARY: 0.2,
     COLLISION: 0.4,
     FACING: 0.6,
     PATH: 0.3,
-    FACING_ARC_LINE: 0.9, 
-    FACING_ARC_FILL: 0.0 
+    FACING_ARC_LINE: 0.9,
+    FACING_ARC_FILL: 0.0
   },
-  
+
   LINE_WIDTH: {
     BOUNDARY: 2,
     FACING: 3,
     PATH: 2,
     FACING_ARC: 1
   },
-  
+
   SIZES: {
     TOKEN: 1,
     SCENE: 1,
-    FACING_ARC_RADIUS_MULTIPLIER: 0.5, 
-    FACING_ARC_ANGLE: 21 
+    FACING_ARC_RADIUS_MULTIPLIER: 0.5,
+    FACING_ARC_ANGLE: 21
+  },
+
+  MOVEMENT_TYPES: {
+    WALK: 'walk',
+    FLY: 'fly',
+    SWIM: 'swim',
+    BURROW: 'burrow',
+    CLIMB: 'climb',
+    HOVER: 'hover',
   }
 } as const;
 

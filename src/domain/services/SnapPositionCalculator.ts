@@ -3,21 +3,12 @@
  * 
  * The service performs a simple back-off calculation along the movement path to find the closest valid position
  * where the moving token is touching but not overlapping the blocking obstacle.
- * 
- * Key Features:
- * - Binary search for precise touch points along movement path
- * - Validates snap positions don't create new collisions
- * - Returns failure if no valid position exists
- * 
- * Performance Optimisations:
- * - Early exit when no movement possible
- * - Efficient binary search with configurable precision
- * - Minimal shape transformations
  */
 import type { CollisionDetector } from '../collision/CollisionDetector.js';
 import type { SpatialEntity } from '../interfaces/SpatialEntity.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
+import { CollisionEntity } from '../value-objects/CollisionEntity.js';
 import { Vector3 } from '../value-objects/Vector3.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
@@ -77,7 +68,7 @@ export class SnapPositionCalculator {
       snapTarget: snapTargetEntity
     });
 
-    const otherObstacles = allObstacles.filter(o => o.id !== snapTargetEntity.id);
+    const otherObstacles = allObstacles.filter(o => o.id !== movingEntity.id);
     // Find snap position by backing off from target
     const snapPosition = this.findSnapPositionAlongPath(
       movingEntity,
@@ -88,7 +79,6 @@ export class SnapPositionCalculator {
       collisionPoint
     );
 
-    // Check if we found a valid position
     if (!snapPosition) {
       this.logger.debug('No valid snap position found');
       return {
@@ -116,9 +106,6 @@ export class SnapPositionCalculator {
     otherObstacles: SpatialEntity[],
     collisionPoint: Vector3
   ): Vector3 | null {
-    // Store original position to restore later
-    const originalPosition = movingEntity.position;
-    const originalElevation = movingEntity.elevation || 0;
 
     let estimatedCollisionT = -1;
 
@@ -145,10 +132,16 @@ export class SnapPositionCalculator {
       const testPosition = start.lerp(target, t);
       
       // Move entity to test position
-      movingEntity.move?.(testPosition);
+      const collisionEntity = new CollisionEntity({
+        position: testPosition.toVector2(),
+        width: movingEntity.width,
+        height: movingEntity.height,
+        elevation: testPosition.z,
+        disposition: movingEntity.disposition
+      });
       
       // Check for any collisions
-      const allCollisions = this.collisionDetector.checkCollision(movingEntity, [snapTarget, ...otherObstacles]);
+      const allCollisions = this.collisionDetector.checkCollision(collisionEntity, [snapTarget, ...otherObstacles]);
       
       if (!allCollisions.isColliding) {
         // Found a valid position
@@ -165,10 +158,16 @@ export class SnapPositionCalculator {
         const fineStepSize = stepSize / 10; // 0.1 unit steps
         for (let fineT = t; fineT <= estimatedCollisionT; fineT += fineStepSize) {
           const finePosition = start.lerp(target, fineT);
-          movingEntity.move?.(finePosition);
-          
-          const fineCollisions = this.collisionDetector.checkCollision(movingEntity, [snapTarget, ...otherObstacles]);
-          
+          const fineCollisionEntity = new CollisionEntity({
+            position: finePosition.toVector2(),
+            width: movingEntity.width,
+            height: movingEntity.height,
+            elevation: finePosition.z,
+            disposition: movingEntity.disposition
+          });
+
+          const fineCollisions = this.collisionDetector.checkCollision(fineCollisionEntity, [snapTarget, ...otherObstacles]);
+
           if (fineCollisions.isColliding) {
             // Hit a collision, use previous position
             break;
@@ -199,10 +198,16 @@ export class SnapPositionCalculator {
       let stepScale = backoffT / 2;
       
       for (let i = 0; i < descentSteps; i++) {
-        movingEntity.move?.(currentPosition);
-        
-        const currentCollisions = this.collisionDetector.checkCollision(movingEntity, [snapTarget, ...otherObstacles]);
-        
+          const collisionEntity = new CollisionEntity({
+            position: currentPosition.toVector2(),
+            width: movingEntity.width,
+            height: movingEntity.height,
+            elevation: currentPosition.z,
+            disposition: movingEntity.disposition
+          });
+
+        const currentCollisions = this.collisionDetector.checkCollision(collisionEntity, [snapTarget, ...otherObstacles]);
+
         if (currentCollisions.isColliding) {
           // Still colliding, move back
           currentT = Math.max(0, currentT - stepScale);
@@ -216,10 +221,16 @@ export class SnapPositionCalculator {
           // Try to get closer
           const testT = currentT + stepScale / 2;
           const testPos = start.lerp(target, testT);
-          movingEntity.move?.(testPos);
-          
-          const testCollisions = this.collisionDetector.checkCollision(movingEntity, [snapTarget, ...otherObstacles]);
-          
+          const testCollisionEntity = new CollisionEntity({
+            position: testPos.toVector2(),
+            width: movingEntity.width,
+            height: movingEntity.height,
+            elevation: testPos.z,
+            disposition: movingEntity.disposition
+          });
+
+          const testCollisions = this.collisionDetector.checkCollision(testCollisionEntity, [snapTarget, ...otherObstacles]);
+
           if (!testCollisions.isColliding) {
             currentT = testT;
             bestValidT = testT;
@@ -237,9 +248,6 @@ export class SnapPositionCalculator {
         }
       }
     }
-
-    // Restore original position
-    movingEntity.move?.(new Vector3(originalPosition.x, originalPosition.y, originalElevation));
 
     this.logger.debug('Search complete', {
       bestT: bestValidT,

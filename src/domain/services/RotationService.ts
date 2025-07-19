@@ -1,8 +1,9 @@
-//TODO Rotate when  snapping
+//TODO Rotate when snapping
+//TODO Rewrite
 
 import { Rotation } from '../value-objects/Rotation.js';
 import { Vector2 } from '../value-objects/Vector2.js';
-import type { MoveableToken } from '../entities/MoveableToken.js';
+import type { Token } from '../entities/Token.js';
 
 export class RotationService {
   private static readonly ROTATION_SEGMENTS = 24;
@@ -199,7 +200,7 @@ export class RotationService {
    * Validate if a rotation is valid for a given token
    */
   validateRotation(
-    token: MoveableToken,
+    token: Token,
     proposedRotation: Rotation
   ): { valid: boolean; reason?: string } {
     // Base implementation - always valid
@@ -210,7 +211,7 @@ export class RotationService {
   /**
    * Orient token towards a target position
    */
-  orientTowards(token: MoveableToken, target: Vector2): void {
+  orientTowards(token: Token, target: Vector2): void {
     const targetRotation = this.calculateRotationBetweenPoints(
       token.getPosition(),
       target

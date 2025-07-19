@@ -1,188 +1,235 @@
 /**
- * Centralised registry for managing overlay type definitions in the Maleficar Manoeuvres. This registry provides a single source of truth for all overlay
- * configurations, enabling dynamic registration, retrieval, and categorisation of overlays.
  * 
- * Features:
- * - Type-safe overlay definition storage
- * - Efficient lookup by ID or characteristics
- * - Event-based overlay categorisation
- * - Batch registration support
+ * This module provides a centralised registry for managing overlay type definitions within. 
+ * It serves as the single source of truth for all overlay configurations,
+ * enabling dynamic registration, retrieval, and categorisation of overlays.
  */
 
-import type { OverlayDefinition } from '../../domain/interfaces/OverlayDefinition.js';
+import type { OverlayDefinition, OverlayTriggers } from '../../domain/interfaces/OverlayDefinition.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 
 export class OverlayRegistry {
-  private readonly overlayTypes = new Map<string, OverlayDefinition>();
-  private readonly logger: FoundryLogger;
+    private readonly overlayTypes = new Map<string, OverlayDefinition>();
+    private readonly logger: FoundryLogger;
 
-  constructor() {
-    this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.OverlayRegistry`);
-    this.logger.info('OverlayRegistry initialised');
-  }
+    constructor() {
+        this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.OverlayRegistry`);
+        this.logger.info('OverlayRegistry initialised');
+    }
 
-  /**
-   * Registers a new overlay type definition.
-   * Overwrites existing definitions with the same ID.
-   */
-  register(definition: OverlayDefinition): void {
-    this.validateDefinition(definition);
-    
-    const isUpdate = this.overlayTypes.has(definition.id);
-    this.overlayTypes.set(definition.id, definition);
-    
-    this.logger.info(`${isUpdate ? 'Updated' : 'Registered'} overlay type: ${definition.id}`);
-  }
-  
-  /**
-   * Registers multiple overlay types at once.
-   * Useful for bulk initialisation during module setup.
-   */
-  registerBatch(definitions: OverlayDefinition[]): void {
-    const startCount = this.overlayTypes.size;
-    
-    for (const definition of definitions) {
-      try {
-        this.register(definition);
-      } catch (error) {
-        this.logger.error(`Failed to register overlay "${definition.id}"`, {
-          error: error instanceof Error ? error.message : String(error)
+    // Public API - Registration
+
+    /**
+     * Registers a new overlay type definition.
+     * Overwrites existing definitions with the same ID.
+     */
+    register(definition: OverlayDefinition): void {
+        
+        const isUpdate = this.overlayTypes.has(definition.id);
+        this.overlayTypes.set(definition.id, definition);
+        
+        this.logger.info(`${isUpdate ? 'Updated' : 'Registered'} overlay type: ${definition.id}`, {
+            name: definition.name,
+            category: definition.category,
+            enabledByDefault: definition.enabledByDefault
         });
-      }
     }
     
-    const registered = this.overlayTypes.size - startCount;
-    this.logger.info(`Batch registered ${registered} overlay types`);
-  }
-  
-  /**
-   * Unregisters an overlay type.
-   */
-  unregister(overlayTypeId: string): boolean {
-    const removed = this.overlayTypes.delete(overlayTypeId);
-    
-    if (removed) {
-      this.logger.info(`Unregistered overlay type: ${overlayTypeId}`);
-    } else {
-      this.logger.warn(`Attempted to unregister non-existent overlay type: ${overlayTypeId}`);
+    /**
+     * Registers multiple overlay types at once.
+     * Useful for bulk initialisation during module setup.
+     * Continues registration even if individual definitions fail.
+     */
+    registerBatch(definitions: OverlayDefinition[]): number {
+        const startCount = this.overlayTypes.size;
+        let failureCount = 0;
+        
+        for (const definition of definitions) {
+            try {
+                this.register(definition);
+            } catch (error) {
+                failureCount++;
+                this.logger.error(`Failed to register overlay "${definition.id}"`, {
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
+        }
+        
+        const registered = this.overlayTypes.size - startCount;
+        this.logger.info(`Batch registered ${registered} overlay types`, {
+            attempted: definitions.length,
+            failed: failureCount
+        });
+        
+        return registered;
     }
     
-    return removed;
-  }
-  
-  /**
-   * Retrieves a specific overlay type definition.
-   */
-  get(overlayTypeId: string): OverlayDefinition | undefined {
-    return this.overlayTypes.get(overlayTypeId);
-  }
-  
-  /**
-   * Retrieves all registered overlay definitions.
-   */
-  getAll(): OverlayDefinition[] {
-    return Array.from(this.overlayTypes.values());
-  }
-  
-  /**
-   * Checks if an overlay type is registered.
-   */
-  has(overlayTypeId: string): boolean {
-    return this.overlayTypes.has(overlayTypeId);
-  }
-  
-  /**
-   * Retrieves all registered overlay IDs.
-   */
-  getAllIds(): string[] {
-    return Array.from(this.overlayTypes.keys());
-  }
-  
-  /**
-   * Clears all registered overlay types.
-   * Useful for testing or module teardown.
-   */
-  clear(): void {
-    const count = this.overlayTypes.size;
-    this.overlayTypes.clear();
-    this.logger.info(`Cleared ${count} overlay types`);
-  }
-  
-  /**
-   * Retrieves overlays that update on specific token events.
-   */
-  getByUpdateEvent(event: 'tokenMove' | 'tokenRotate' | 'tokenElevation'): OverlayDefinition[] {
-    return Array.from(this.overlayTypes.values())
-      .filter(definition => definition.updateOn?.[event] === true);
-  }
-  
-  /**
-   * Retrieves overlays triggered by specific events.
-   */
-  getByTrigger(trigger: 'tokenDrag' | 'tokenSelect' | 'tokenHover'): OverlayDefinition[] {
-    return Array.from(this.overlayTypes.values())
-      .filter(definition => definition.triggers?.[trigger] === true);
-  }
-  
-  /**
-   * Retrieves overlays visible on canvas startup.
-   */
-  getStartupOverlays(): OverlayDefinition[] {
-    return Array.from(this.overlayTypes.values())
-      .filter(definition => definition.visibleOnStart === true);
-  }
-  
-  /**
-   * Gets registry statistics for monitoring.
-   */
-  getStats(): {
-    total: number;
-    startupVisible: number;
-    byTrigger: Record<string, number>;
-    byUpdateEvent: Record<string, number>;
-  } {
-    const overlays = this.getAll();
+    /**
+     * Unregisters an overlay type.
+     */
+    unregister(overlayTypeId: string): boolean {
+        const removed = this.overlayTypes.delete(overlayTypeId);
+        
+        if (removed) {
+            this.logger.info(`Unregistered overlay type: ${overlayTypeId}`);
+        } else {
+            this.logger.warn(`Attempted to unregister non-existent overlay type: ${overlayTypeId}`);
+        }
+        
+        return removed;
+    }
+
+    // Public API - Retrieval
     
-    return {
-      total: overlays.length,
-      startupVisible: overlays.filter(o => o.visibleOnStart).length,
-      byTrigger: {
-        tokenDrag: overlays.filter(o => o.triggers?.tokenDrag).length,
-        tokenSelect: overlays.filter(o => o.triggers?.tokenSelect).length,
-        tokenHover: overlays.filter(o => o.triggers?.tokenHover).length
-      },
-      byUpdateEvent: {
-        tokenMove: overlays.filter(o => o.updateOn?.tokenMove).length,
-        tokenRotate: overlays.filter(o => o.updateOn?.tokenRotate).length,
-        tokenElevation: overlays.filter(o => o.updateOn?.tokenElevation).length
-      }
-    };
-  }
-  
-  /**
-   * Validates an overlay definition before registration.
-   */
-  private validateDefinition(definition: OverlayDefinition): void {
-    if (!definition.id) {
-      throw new Error('Overlay definition must have an id');
+    /**
+     * Retrieves a specific overlay type definition.
+     */
+    get(overlayTypeId: string): OverlayDefinition | undefined {
+        return this.overlayTypes.get(overlayTypeId);
     }
     
-    if (!definition.name) {
-      throw new Error(`Overlay definition "${definition.id}" must have a name`);
+    /**
+     * Retrieves all registered overlay definitions.
+     * Returns a defensive copy to prevent external modification.
+     */
+    getAll(): OverlayDefinition[] {
+        return Array.from(this.overlayTypes.values());
     }
     
-    // Validate boolean fields are actually booleans if present
-    if (definition.permissions.requireLOS !== undefined && 
-        typeof definition.permissions.requireLOS !== 'boolean') {
-      throw new Error(`Overlay definition "${definition.id}" permissions.requireLOS must be a boolean`);
+    /**
+     * Checks if an overlay type is registered.
+     */
+    has(overlayTypeId: string): boolean {
+        return this.overlayTypes.has(overlayTypeId);
     }
     
-    if (definition.visibleOnStart !== undefined && 
-        typeof definition.visibleOnStart !== 'boolean') {
-      throw new Error(`Overlay definition "${definition.id}" visibleOnStart must be a boolean`);
+    /**
+     * Retrieves all registered overlay IDs.
+     */
+    getAllIds(): string[] {
+        return Array.from(this.overlayTypes.keys());
     }
-  }
+
+    /**
+     * Gets the count of registered overlays.
+     */
+    size(): number {
+        return this.overlayTypes.size;
+    }
+
+    // Public API - Filtering
+
+    /**
+     * Filters overlays by trigger type.
+     */
+    filterByTrigger(trigger: keyof OverlayTriggers): OverlayDefinition[] {
+        return this.getAll().filter(overlay => {
+            const triggerValue = overlay.triggers[trigger];
+
+            if (!triggerValue) {
+                return false;
+            }
+
+            // Handle trigger configs (objects with scope property)
+            if (typeof triggerValue === 'object' && triggerValue !== null && !Array.isArray(triggerValue)) {
+                // For keyPress with keys array
+                if (trigger === 'keyPress' && 'keys' in triggerValue) {
+                    return (triggerValue.keys?.length ?? 0) > 0;
+                }
+
+                // Any object trigger config is considered enabled
+                return true;
+            }
+
+            // Handle modifier key arrays - non-empty array means enabled
+            if (Array.isArray(triggerValue)) {
+                return triggerValue.length > 0;
+            }
+
+            // Handle function predicates - presence means enabled
+            if (typeof triggerValue === 'function') {
+                return true;
+            }
+
+            return false;
+        });
+    }
+
+    /**
+     * Filters overlays by a specific key press trigger.
+     */
+    filterByKeyTrigger(triggerKey: string): OverlayDefinition[] {
+        const normalisedKey = triggerKey.toLowerCase();
+        
+        return this.getAll().filter(overlay => {
+            const keyPressTrigger = overlay.triggers.keyPress;
+
+            if (!keyPressTrigger) {
+                return false;
+            }
+
+            // Handle boolean keyPress (shouldn't have specific keys)
+            if (typeof keyPressTrigger === 'boolean') {
+                return false;
+            }
+
+            // Check if it's a KeyPressTriggerConfig with keys
+            if ('keys' in keyPressTrigger && keyPressTrigger.keys?.length) {
+                return keyPressTrigger.keys.includes(normalisedKey);
+            }
+
+            return false;
+        });
+    }
+    
+    /**
+     * Retrieves overlays visible on canvas startup.
+     */
+    getStartupOverlays(): OverlayDefinition[] {
+        return this.getAll().filter(definition => definition.visibleOnStart === true);
+    }
+
+    /**
+     * Filters overlays by category.
+     */
+    filterByCategory(category: string): OverlayDefinition[] {
+        return this.getAll().filter(definition => definition.category === category);
+    }
+
+    /**
+     * Filters overlays by render target.
+     */
+    filterByRenderTarget(renderTarget: 'world' | 'interface'): OverlayDefinition[] {
+        return this.getAll().filter(definition => definition.renderTarget === renderTarget);
+    }
+
+    /**
+     * Gets all unique overlay categories.
+     */
+    getCategories(): string[] {
+        const categories = new Set<string>();
+        
+        for (const definition of this.overlayTypes.values()) {
+            if (definition.category) {
+                categories.add(definition.category);
+            }
+        }
+        
+        return Array.from(categories);
+    }
+
+    // Public API - Management
+    
+    /**
+     * Clears all registered overlay types.
+     * Useful for testing or module teardown.
+     */
+    clear(): void {
+        const count = this.overlayTypes.size;
+        this.overlayTypes.clear();
+        this.logger.info(`Cleared ${count} overlay types`);
+    }
 }

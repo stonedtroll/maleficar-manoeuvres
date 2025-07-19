@@ -24,16 +24,21 @@ export const TokenBoundaryDefinition: OverlayDefinition = {
   },
 
   triggers: {
-    tokenHover: false,
-    tokenSelect: false,
-    tokenDrag: true,
-    keyPress: ['m']
+    tokenDragStart: {
+      scope: 'visible-and-not-hidden'
+    },
+    tokenDragMove: {
+      scope: 'preview'
+    },
+    keyPress: {
+      keys: ['m'],
+      scope: 'visible-and-not-hidden'
+    }
   },
 
   updateOn: {
     tokenMove: true,
     tokenRotate: false,
-    tokenElevation: false,
     visionChange: true,
     wallChange: true,
     gridChange: true

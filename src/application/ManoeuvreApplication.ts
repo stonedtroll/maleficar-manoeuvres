@@ -1,19 +1,6 @@
 /**
- * Maleficar Manoeuvres - Main Application Controller
- * 
  * Central orchestrator for the Maleficar Manoeuvres module, managing the 
  * high-level application lifecycle and coordinating core services.
- * 
- * Responsibilities:
- * - Application initialisation and teardown
- * - Default overlay registration
- * - Event bus coordination
- * - Service lifecycle management
- * 
- * Lifecycle:
- * 1. Initialisation - Register overlays and notify services
- * 2. Runtime - Coordinate between services via event bus
- * 3. Teardown - Clean shutdown of all services
  */
 
 import type { EventBus } from '../infrastructure/events/EventBus.js';
@@ -26,6 +13,7 @@ import { MODULE_ID } from '../config.js';
 import { TokenBoundaryDefinition } from '../infrastructure/overlays/definitions/TokenBoundaryDefinition.js';
 import { FacingArcDefinition } from '../infrastructure/overlays/definitions/FacingArcDefinition.js';
 import { ObstacleIndicatorDefinition } from '../infrastructure/overlays/definitions/ObstacleIndicatorDefinition.js';
+import { ActorInfoDefinition } from '../infrastructure/overlays/definitions/ActorInfoDefinition.js';
 
 export class ManoeuvreApplication {
   private readonly logger: FoundryLogger;
@@ -51,7 +39,7 @@ export class ManoeuvreApplication {
     this.logger.info('Initialising ManoeuvreApplication');
 
     try {
-      // Register built-in overlays
+      // Register built-in overlays. TODO: Decide whether this should go to the registry directly
       await this.registerDefaultOverlays();
 
       // Notify all services that application is ready
@@ -93,7 +81,6 @@ export class ManoeuvreApplication {
 
     } catch (error) {
       this.logger.error('Error during application teardown', error);
-      // Don't throw - best effort cleanup
     }
   }
 
@@ -114,7 +101,8 @@ export class ManoeuvreApplication {
     const overlayDefinitions: OverlayDefinition[] = [
       TokenBoundaryDefinition,
       FacingArcDefinition,
-      ObstacleIndicatorDefinition
+      ObstacleIndicatorDefinition,
+      ActorInfoDefinition
     ];
 
     let successCount = 0;
@@ -150,26 +138,5 @@ export class ManoeuvreApplication {
         throw new Error(`Failed to register critical overlay: ${criticalFailure.id}`);
       }
     }
-  }
-
-  /**
-   * Get current application statistics
-   * Useful for diagnostics and debugging
-   */
-  getStats(): Record<string, unknown> {
-    const overlays = this.overlayRegistry.getAll();
-
-    return {
-      initialised: this.initialised,
-      overlays: {
-        total: overlays.length,
-        types: overlays.map(o => ({
-          id: o.id,
-          displayName: o.name,
-          visibleOnStart: o.visibleOnStart
-        }))
-      },
-      uptime: this.initialised ? Date.now() : 0
-    };
   }
 }

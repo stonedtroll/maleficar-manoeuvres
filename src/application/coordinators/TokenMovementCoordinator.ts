@@ -14,6 +14,7 @@ import type { EventBus } from '../../infrastructure/events/EventBus.js';
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import type { MoveTokenCommandOptions } from '../types/CommandOptions';
 
+import { Token } from '../../domain/entities/Token.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 import { MoveTokenCommand } from '../commands/MoveTokenCommand.js';
@@ -21,7 +22,7 @@ import { MovementValidator } from '../../domain/services/MovementValidator.js';
 import { CommandExecutor } from '../commands/CommandExecutor.js';
 import { Vector3 } from '../../domain/value-objects/Vector3.js';
 import { SnapPositionCalculator } from '../../domain/services/SnapPositionCalculator.js';
-import { TokenStateAdapter } from '../adapters/TokenStateAdapter.js';
+import { MoveResult } from '../types/MoveResult.js';
 
 export class TokenMovementCoordinator {
   private readonly logger: FoundryLogger;
@@ -37,7 +38,6 @@ export class TokenMovementCoordinator {
     private readonly commandExecutor: CommandExecutor,
     private readonly movementValidator: MovementValidator,
     private readonly snapCalculator: SnapPositionCalculator,
-    private readonly tokenStateAdapter: TokenStateAdapter,
     private readonly eventBus: EventBus
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.TokenMovementCoordinator`);
@@ -57,36 +57,37 @@ export class TokenMovementCoordinator {
         return;
       }
 
-      // Check if position has changed
-      if (event.updateOptions.maleficarManoeuvresValidatedMove || !this.hasPositionChanged(event)) {
+      const changes = event.changes;
+
+      if (event.updateOptions.maleficarManoeuvresValidatedMove || !this.hasPositionChanged(changes)) {
         return;
       }
 
-      const { currentState, changedState, placeableTokens } = event;
+      const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
+      const updatingtToken = new Token(event.updatingTokenAdapter);
 
-      // Calculate target position
-      const targetPosition = this.calculateTargetPosition(currentState, changedState);
+      const startPosition = new Vector3(updatingtToken.position.x, updatingtToken.position.y, updatingtToken.elevation ?? 0);
+      const endPosition = this.determineEndPosition(updatingtToken, changes);
 
-      // Skip if no actual movement
-      if (this.isSamePosition(currentState, targetPosition)) {
+      if (this.isSamePosition(startPosition, endPosition)) {
         this.logger.debug('No actual position change detected');
         return;
       }
 
       // Execute movement command
       const moveResult = await this.executeMovement(
-        currentState,
-        targetPosition,
-        placeableTokens
+        updatingtToken,
+        endPosition,
+        allTokens
       );
 
       // Emit movement event based on result
-      await this.emitMovementEvent(currentState, moveResult);
+      await this.emitMovementEvent(updatingtToken, moveResult);
 
     } catch (error) {
       this.logger.error('Error handling token update', {
         error: error instanceof Error ? error.message : String(error),
-        tokenId: event?.currentState?.id
+        tokenId: event.updatingTokenAdapter.id,
       });
     }
   }
@@ -103,21 +104,21 @@ export class TokenMovementCoordinator {
   /**
    * Checks if the update event contains position changes.
    */
-  private hasPositionChanged(event: TokenUpdateEvent): boolean {
-    return 'x' in event.changedState || 'y' in event.changedState;
+  private hasPositionChanged(changes: Partial<TokenUpdateEvent['changes']>): boolean {
+    return 'x' in changes || 'y' in changes;
   }
 
   /**
    * Calculates the target position from state changes.
    */
-  private calculateTargetPosition(
-    currentState: TokenUpdateEvent['currentState'],
-    changedState: TokenUpdateEvent['changedState']
+  private determineEndPosition(
+    updatingToken: Token,
+    changes: Partial<TokenUpdateEvent['changes']>
   ): Vector3 {
     return new Vector3(
-      changedState.x ?? currentState.x,
-      changedState.y ?? currentState.y,
-      changedState.elevation ?? currentState.elevation ?? 0
+      changes.x ?? updatingToken.position.x,
+      changes.y ?? updatingToken.position.y,
+      changes.elevation ?? updatingToken.elevation ?? 0
     );
   }
 
@@ -125,30 +126,25 @@ export class TokenMovementCoordinator {
    * Checks if two positions are the same.
    */
   private isSamePosition(
-    currentState: TokenUpdateEvent['currentState'],
-    targetPosition: Vector3
+    startPosition: Vector3,
+    endPosition: Vector3
   ): boolean {
-    return targetPosition.x === currentState.x &&
-      targetPosition.y === currentState.y;
+    return endPosition.x === startPosition.x &&
+      endPosition.y === startPosition.y;
   }
 
   /**
    * Executes the movement command with validation and snapping.
    */
   private async executeMovement(
-    tokenState: TokenUpdateEvent['currentState'],
-    targetPosition: Vector3,
-    placeableTokens: TokenUpdateEvent['placeableTokens']
+    updatingToken: Token,
+    endPosition: Vector3,
+    allTokens: Token[]
   ) {
-    // Convert to domain objects
-    const domainToken = this.tokenStateAdapter.toGridlessToken(tokenState);
-    const obstacles = this.prepareObstacles(tokenState.id, placeableTokens);
-
-    // Create and execute movement command
     const command = new MoveTokenCommand(
-      domainToken,
-      targetPosition,
-      obstacles,
+      updatingToken,
+      endPosition,
+      allTokens,
       TokenMovementCoordinator.DEFAULT_MOVE_OPTIONS,
       this.movementValidator,
       this.snapCalculator
@@ -170,40 +166,31 @@ export class TokenMovementCoordinator {
   }
 
   /**
-   * Prepares obstacles for collision detection.
-   * Filters out hidden tokens and the moving token itself.
-   */
-  private prepareObstacles(
-    movingTokenId: string,
-    placeableTokens: TokenUpdateEvent['placeableTokens']
-  ) {
-    return placeableTokens
-      .filter(token =>
-        token.id !== movingTokenId &&
-        !token.hidden
-      )
-      .map(token => this.tokenStateAdapter.toGridlessToken(token));
-  }
-
-  /**
    * Emits movement event based on command result.
    */
   private async emitMovementEvent(
-    tokenState: TokenUpdateEvent['currentState'],
-    moveResult: Awaited<ReturnType<typeof this.executeMovement>>
+    updatingToken: Token,
+    moveResult: MoveResult
   ): Promise<void> {
+
+    this.logger.debug('Emitting token movement event', {
+      tokenId: updatingToken.id,
+      newPosition: moveResult.newPosition,
+      updatingToken: updatingToken,
+      moveResult: moveResult
+    });
 
     // Build base payload with guaranteed values
     const basePayload = {
-      tokenId: tokenState.id,
-      tokenName: tokenState.name,
+      tokenId: updatingToken.id,
+      tokenName: updatingToken.name,
       fromPosition: moveResult.previousPosition ?? {
-        x: tokenState.x,
-        y: tokenState.y
+        x: updatingToken.position.x,
+        y: updatingToken.position.y
       },
       toPosition: moveResult.newPosition ?? {
-        x: tokenState.x,
-        y: tokenState.y
+        x: updatingToken.position.x,
+        y: updatingToken.position.y
       },
       isSnapped: moveResult.isSnapped ?? false,
       distance: moveResult.distance ?? 0
@@ -227,8 +214,14 @@ export class TokenMovementCoordinator {
       // Preserve current behaviour: emit 'token.moved' even on failure
       await this.eventBus.emit('token.moved', {
         ...eventPayload,
-        fromPosition: { x: tokenState.x, y: tokenState.y },
-        toPosition: { x: tokenState.x, y: tokenState.y },
+        fromPosition: moveResult.previousPosition ?? {
+          x: updatingToken.position.x,
+          y: updatingToken.position.y
+        },
+        toPosition: moveResult.newPosition ?? {
+          x: updatingToken.position.x,
+          y: updatingToken.position.y
+        },
         isSnapped: false
       });
     } else {

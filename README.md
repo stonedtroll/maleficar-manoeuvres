@@ -17,7 +17,6 @@ To follow the module’s development, you can read the series here: https://hash
 
 ### Movement System
 - **Collision Detection**: 3D collision detection.
-- **Movement Validation**: Path validation with obstacle detection and boundary checking.
 - **Snap-to-Position**: Positioning that snaps tokens to valid locations when movement is blocked.
 - **Elevation Support**: 3D movement with height-based collision detection.
 - **Respects Disposition**:
@@ -29,6 +28,7 @@ To follow the module’s development, you can read the series here: https://hash
 - **Facing Arcs**: Display token facing direction and field of view.
 - **Token Boundaries**: Visual representation of token collision boundaries.
 - **Obstacle Indicator**: While dragging, highlight the first token that would obstruct movement in real time.
+- **Actor Info**: Displays each actor’s movement speed, providing at‑a‑glance speed information during play.
   
 <p align=center>
     <img width="256" height="256" alt="obstacle-indicator" src="https://github.com/user-attachments/assets/da71d0d1-5990-4387-b5f1-94e840ca3a4f" />
@@ -38,12 +38,14 @@ To follow the module’s development, you can read the series here: https://hash
 - Hold 'm' to display token boundaries and facing arcs.
 - The facing-arc colour indicates each token’s disposition.
 - Selecting a token changes its facing-arc to your user colour.
-- Selection and hover default boundaries are disabled.
-
-**Note:** Overlays only appear for tokens visible to your currently selected token. If no token is selected, it default to your controlled token(s).
+- By default, selection and hover borders are turned off, but you can enable them again in the Settings menu.
 
 ## Suggested Module
 - Enhances token vision detection and assists in identifying which tokens should display an overlay: https://github.com/dev7355608/vision-5e
 
-<img alt="GitHub Downloads (specific asset, all releases)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/module.zip?style=for-the-badge&labelColor=2A2D34&color=8C2E2E">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img alt="GitHub Downloads (specific asset, latest release)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/latest/module.zip?style=for-the-badge&labelColor=2A2D34&color=D97D26">
+## Attribution
+
+<p align=right>
+    <img alt="GitHub Downloads (specific asset, all releases)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/module.zip?style=for-the-badge&labelColor=2A2D34&color=8C2E2E">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img alt="GitHub Downloads (specific asset, latest release)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/latest/module.zip?style=for-the-badge&labelColor=2A2D34&color=D97D26">
+</p>
 

@@ -1,70 +1,45 @@
 /**
- * System Event Adapter
- * 
  * TODO: Pay the technical debt troll.
  * 
  * Unified adapter that bridges Foundry VTT's event system with the module's event bus.
- * Translates system hooks into domain events.
- * 
- * This adapter follows the Hexagonal Architecture pattern, isolating Foundry-specific
- * implementation details from the core domain logic.
- * 
- * Key responsibilities:
- * - Hook registration and lifecycle management
- * - Event translation from Foundry to domain events
- * - Token state change detection and propagation
- * - Canvas lifecycle event handling
- * - Combat tracking and scene management
- * 
- * Event naming conventions:
- * - Infrastructure events use colon notation (e.g., 'token:update')
- * - All events are emitted through the EventBus for decoupling
  */
 
 import { EventBus } from '../events/EventBus.js';
-import { MODULE_ID } from '../../config.js';
+import { MODULE_ID, SETTINGS } from '../../config.js';
+import { getSetting } from '../../settings.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
+import { TokenRepository } from '../repositories/TokenRepository.js';
+import { ActorRepository } from '../repositories/ActorRepository.js';
+import { UserRepository } from '../repositories/UserRepository.js';
 import type {
-  TokenCreateEvent,
-  TokenDeleteEvent,
-  TokenSelectedEvent,
-  TokenDeselectedEvent,
   TokenUpdateEvent,
   TokenPreUpdateEvent,
-  TokenRefreshEvent,
-  TokenHoverEvent,
-  TokenHoverEndEvent,
-  TokenControlEvent,
-  CanvasInitEvent,
-  CanvasReadyEvent,
-  CanvasTeardownEvent,
   ScenePreUpdateEvent,
   SceneUpdateEvent,
   WallUpdateEvent,
-  SettingsCloseEvent,
   TokenState,
-  TokensReadyEvent
+  TokensReadyEvent,
+  TokenDragStartEvent,
+  TokenDragMoveEvent
 } from '../events/FoundryEvents.js';
 import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
 import type { DispositionValue } from '../..//domain/constants/TokenDisposition.js';
 
-// export interface TokenDragState {
-//   token: Token;
-//   isDragging: boolean;
-//   startPosition: { x: number; y: number; elevation?: number };
-//   currentPosition: { x: number; y: number; elevation?: number };
-//   dragStartTime: number;
-//   lastUpdate: number;
-// }
-
 export class SystemEventAdapter implements InitialisableService {
   private readonly logger: FoundryLogger;
   private readonly registeredHooks: Map<string, number> = new Map();
+  private readonly tokenRepository: TokenRepository;
+  private readonly actorRepository: ActorRepository;
+  private readonly userRepository: UserRepository;
+  private readonly responseWaiter: EventResponseWaiter;
   private isInitialised = false;
   private currentlyDragging = false;
 
   constructor(private readonly eventBus: EventBus) {
-    this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.SystemEventAdapter`, { moduleIdColour: 'green' });
+    this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.SystemEventAdapter`);
+    this.tokenRepository = new TokenRepository();
+    this.actorRepository = new ActorRepository(this.tokenRepository);
+    this.userRepository = new UserRepository();
   }
 
   /**
@@ -276,6 +251,50 @@ export class SystemEventAdapter implements InitialisableService {
     options: any,
     userId: string
   ): void {
+
+    // Skip if already validated
+    if (options.maleficarManoeuvresValidatedMove) {
+      return;
+    }
+
+    // Check if movement validation is needed
+    // if (this.shouldValidateMovement(changes)) {
+    //   try {
+    //   const validationResponse = await this.responseWaiter.waitForResponse<
+    //     MovementValidationRequest,
+    //     MovementValidationResponse
+    //   >(
+    //     'movement:validate:request',
+    //     'movement:validate:response',
+    //     {
+    //       tokenId: document.id,
+    //       currentPosition: { x: document.x, y: document.y },
+    //       proposedPosition: { x: changes.x ?? document.x, y: changes.y ?? document.y },
+    //       userId,
+    //       timestamp: Date.now()
+    //     },
+    //     { timeoutMs: 3000 }
+    //   );
+
+    //   if (!validationResponse.approved) {
+    //     // Revert the movement
+    //     await document.update(
+    //       { x: document.x, y: document.y },
+    //       { 
+    //         animate: false,
+    //         maleficarManoeuvresValidatedMove: true 
+    //       }
+    //     );
+
+    //     // Show rejection feedback
+    //     ui.notifications?.warn(validationResponse.reason ?? 'Movement blocked');
+    //     return;
+    //   }
+    // } catch (error) {
+    //   this.logger.warn('Movement validation failed, allowing movement', error);
+    //   // On timeout or error, allow the movement
+    // }
+    // }
     if (!this.hasRelevantChanges(changes)) return;
 
     const event: TokenPreUpdateEvent = {
@@ -340,52 +359,65 @@ export class SystemEventAdapter implements InitialisableService {
       options,
       userId
     });
+
     if (options.maleficarManoeuvresValidatedMove) {
       return;
     }
 
-    const token = canvas?.tokens?.get(document.id);
-    const user = game.users?.get(userId);
-    const placeableTokens: TokenState[] = [];
-    if (canvas?.ready && canvas.tokens?.placeables) {
-      for (const t of canvas.tokens.placeables) {
-        if (t && t.id) { // Ensure token exists and has an id
-          try {
-            placeableTokens.push(this.extractTokenState(t));
-          } catch (error) {
-            this.logger.warn('Failed to extract token state', {
-              tokenId: t.id,
-              error: error as Error
-            });
-          }
-        }
-      }
+    const updatedToken = this.tokenRepository.getById(document.id);
+
+    if (!updatedToken) {
+      this.logger.warn(`Token update failed: Token not found for ID ${document.id}`);
+      return;
     }
 
-    const event: TokenUpdateEvent = {
-      id: document.id,
-      currentState: this.extractCurrentState(document, token),
-      changedState: this.extractChangedState(changes),
-      updateOptions: this.extractUpdateOptions(options),
-      placeableTokens: placeableTokens,
-      user: {
-        id: userId,
-        colour: user?.color.toString(16).padStart(6, "0"),
-        isGM: user?.isGM
-      },
-      isUnconstrainedMovement: this.isUnconstrainedMovementEnabled()
-    };
-    this.eventBus.emit('token:update', event);
+    this.emitTokenUpdateEvent(updatedToken, changes, options);
 
     this.logger.debug(`Token updated: ${document.name} [${document.id}]`, {
       event
     });
   }
 
-  private handleTokenRefresh(token: Token, flags: any): void {
-    if (token.border) {
-      token.border.clear();
+  private emitTokenUpdateEvent(
+    token: Token,
+    changes: any,
+    options: any
+  ): void {
+
+    const tokenUpdateEvent: TokenUpdateEvent = {
+      timestamp: Date.now(),
+      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
+      updatingTokenAdapter: this.tokenRepository.getAsAdapter(token),
+      changes: this.extractChangedState(changes),
+      updateOptions: this.extractUpdateOptions(options),
+      isUnconstrainedMovement: this.isUnconstrainedMovementEnabled(),
+      user: this.userRepository.getCurrentUserContext()
+    };
+
+    this.eventBus.emit('token:update', tokenUpdateEvent);
+  }
+
+  /**
+ * Clears token border graphics.
+ */
+  private clearTokenBorder(token: Token): void {
+    try {
+      // Check if token border indicator is enabled in settings
+      const showTokenBorder = getSetting<boolean>(SETTINGS.TOKEN_BORDER_INDICATOR);
+
+      if (!showTokenBorder && token?.border) {
+        token.border.clear();
+      }
+    } catch (error) {
+      this.logger.warn('Failed to clear token border graphics', {
+        tokenId: token?.id,
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
+  }
+
+  private handleTokenRefresh(token: Token, flags: any): void {
+    this.clearTokenBorder(token);
 
     const previewToken = canvas.tokens.preview.children.find(p => p.id === token.id);
     const controlledTokens = canvas.tokens?.controlled || [];
@@ -395,57 +427,49 @@ export class SystemEventAdapter implements InitialisableService {
     if (previewToken) {
       if (!this.currentlyDragging) {
         this.logger.debug('Drag starting detected', {
-          tokenId: token.id,
-          tokenName: token.name
+          token,
+          previewToken,
+          movementData: token.actor?.system?.attributes?.movement ?? 'unknown',
+          movementAction: token.document.movementAction ?? 'unknown',
+          actions: CONFIG.Token.movement.actions ?? 'unknown'
         });
         this.currentlyDragging = true;
-        this.handleDragStart(token, previewToken);
+        this.emitTokenDragStartEvent(token, previewToken);
       } else if (this.currentlyDragging) {
+        this.logger.debug('Drag moving detected', {
+          token,
+          previewToken,
+          movementData: token.actor?.system?.attributes?.movement ?? 'unknown',
+          movementAction: token.document.movementAction ?? 'unknown',
+          actions: CONFIG.Token.movement.actions ?? 'unknown'
+        });
         this.handleDragMove(token, previewToken);
       }
     } else if (this.currentlyDragging) {
-        this.logger.debug('Drag ending detected', {
-          tokenId: token.id,
-          tokenName: token.name
-        });
-        this.currentlyDragging = false;
-        this.handleDragEnd(token);
+      this.logger.debug('Drag ending detected', {
+        token,
+        previewToken,
+        movementData: token.actor?.system?.attributes?.movement ?? 'unknown',
+        movementAction: token.document.movementAction ?? 'unknown',
+        actions: CONFIG.Token.movement.actions ?? 'unknown'
+      });
+      this.currentlyDragging = false;
+      this.handleDragEnd(token);
     }
   }
 
- /**
-   * Handle drag start detected by polling
-   */
-  private handleDragStart(token: Token, previewToken: Token): void {
+  private emitTokenDragStartEvent(token: Token, previewToken: Token): void {
 
-    const controlledToken = this.extractTokenState(token);
-    const placeableTokens: TokenState[] = [];
-    if (canvas?.ready && canvas.tokens?.placeables) {
-      for (const t of canvas.tokens.placeables) {
-        if (t && t.id) { 
-          try {
-            placeableTokens.push(this.extractTokenState(t));
-          } catch (error) {
-            this.logger.warn('Failed to extract token info', {
-              tokenId: t.id,
-              error: error as Error
-            });
-          }
-        }
-      }
-    }
+    const tokenDragStartEvent: TokenDragStartEvent = {
+      timestamp: Date.now(),
+      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
+      dragStartTokenAdaptor: this.tokenRepository.getAsAdapter(token),
+      previewTokenAdapter: this.tokenRepository.getAsAdapter(previewToken),
+      ownedByCurrentUserActorAdapters: this.actorRepository.getFromOwnedTokensAsAdapters(),
+      user: this.userRepository.getCurrentUserContext(),
+    };
 
-    this.eventBus.emit('token:dragStart', {
-      controlledToken: controlledToken,
-      dragPosition:  previewToken.position,
-      dragElevation: previewToken.elevation,
-      placeableTokens: placeableTokens,
-      user: {
-        id: game.user?.id ?? '',
-        colour: game.user?.colour ?? '',  
-        isGM: game.user?.isGM ?? false
-      }
-    });
+    this.eventBus.emit('token:dragStart', tokenDragStartEvent);
   }
 
   /**
@@ -453,35 +477,23 @@ export class SystemEventAdapter implements InitialisableService {
    */
   private handleDragMove(token: Token, previewToken: Token): void {
 
-    const controlledToken = this.extractTokenState(token);
-    const dragPosition = previewToken.position;
-    const placeableTokens: TokenState[] = [];
-    if (canvas?.ready && canvas.tokens?.placeables) {
-      for (const t of canvas.tokens.placeables) {
-        if (t && t.id) { 
-          try {
-            placeableTokens.push(this.extractTokenState(t));
-          } catch (error) {
-            this.logger.warn('Failed to extract token info', {
-              tokenId: t.id,
-              error: error as Error
-            });
-          }
-        }
-      }
-    }
+    const tokenDragMoveEvent: TokenDragMoveEvent = {
+      timestamp: Date.now(),
+      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
+      dragStartTokenAdaptor: this.tokenRepository.getAsAdapter(token),
+      previewTokenAdapter: this.tokenRepository.getAsAdapter(previewToken),
+      ownedByCurrentUserActorAdapters: this.actorRepository.getFromOwnedTokensAsAdapters(),
+      user: this.userRepository.getCurrentUserContext(),
+    };
 
-    this.eventBus.emit('token:dragMove', {
-      controlledToken: controlledToken,
-      dragPosition: dragPosition,
-      dragElevation: previewToken.elevation,
-      placeableTokens: placeableTokens,
-      user: {
-        id: game.user?.id ?? '',
-        colour: game.user?.colour ?? '',  
-        isGM: game.user?.isGM ?? false
-      }
+    this.logger.debug('Token dragging', {
+      tokenId: token.id,
+      position: { x: token.x, y: token.y },
+      previewPosition: { x: previewToken.x, y: previewToken.y },
+      previewToken: previewToken,
+      placeables: canvas.tokens?.placeables
     });
+    this.eventBus.emit('token:dragMove', tokenDragMoveEvent);
   }
 
   /**
@@ -504,8 +516,8 @@ export class SystemEventAdapter implements InitialisableService {
       //   x: finalPosition.x - state.startPosition.x,
       //   y: finalPosition.y - state.startPosition.y
       // },
-            totalDelta: {
-        x: finalPosition.x ,
+      totalDelta: {
+        x: finalPosition.x,
         y: finalPosition.y
       },
       prevented: false
@@ -618,25 +630,6 @@ export class SystemEventAdapter implements InitialisableService {
   private hasRelevantChanges(changes: any): boolean {
     const relevantKeys = ['x', 'y', 'rotation', 'elevation', 'hidden', 'alpha'];
     return relevantKeys.some(key => changes[key] !== undefined);
-  }
-
-  private extractCurrentState(document: TokenDocument, token: Token | undefined): TokenState {
-    return {
-      id: document.id,
-      name: document.name ?? 'Eldritch',
-      x: document.x,
-      y: document.y,
-      rotation: (document as any).rotation ?? 0,
-      elevation: document.elevation ?? 0,
-      width: token?.w ?? document.width * canvas.grid.size,
-      height: token?.h ?? document.height * canvas.grid.size,
-      scale: document.scale ?? 1,
-      hidden: document.hidden,
-      visible: token?.visible ?? true,
-      controlled: token?.controlled ?? false,
-      ownedByCurrentUser: token?.isOwner ?? false,
-      disposition: document.disposition
-    };
   }
 
   private extractProposedChanges(changes: any): Partial<TokenState> {

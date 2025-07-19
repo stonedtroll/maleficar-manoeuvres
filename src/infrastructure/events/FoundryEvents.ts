@@ -1,11 +1,11 @@
 /**
- * Foundry Infrastructure Events
- * 
  * Events that originate from Foundry VTT hooks and system interactions.
  * These are low-level events that capture raw Foundry state changes.
  * All infrastructure events use colon notation (e.g., token:update).
  */
 import type { DispositionValue } from '../../domain/constants/TokenDisposition.js';
+import type { AbstractActorAdapter } from '../../application/adapters/AbstractActorAdapter.js';
+import type { AbstractTokenAdapter } from '../../application/adapters/AbstractTokenAdapter.js';
 
 // Canvas Events
 export interface CanvasInitEvent {
@@ -67,6 +67,21 @@ export interface TokenState {
   disposition: DispositionValue;
 }
 
+export interface ActorInfo {
+  movementModes: MovementMode[];
+  canHover: boolean;
+  currentAction: MovementActionType;
+}
+
+export interface MovementMode {
+  type: BasicMovementType;
+  units: string;
+  speed: number;
+}
+
+export type MovementActionType = 'walk' | 'climb' | 'fly' | 'swim' | 'burrow' | 'hover';
+export type BasicMovementType = 'walk' | 'climb' | 'fly' | 'swim' | 'burrow';
+
 export interface TokenPreUpdateEvent {
   tokenId: string;
   tokenName: string;
@@ -87,9 +102,10 @@ export interface TokenPreUpdateEvent {
 }
 
 export interface TokenUpdateEvent {
-  id: string;
-  currentState: TokenState;
-  changedState: Partial<TokenState>;
+  timestamp: number;
+  allTokenAdapters: AbstractTokenAdapter[];
+  updatingTokenAdapter: AbstractTokenAdapter;
+  changes: Partial<TokenState>;
   updateOptions: {
     animate: boolean;
     isUndo: boolean;
@@ -102,7 +118,6 @@ export interface TokenUpdateEvent {
     };
     maleficarManoeuvresValidatedMove: boolean;
   };
-  placeableTokens: TokenState[];
   user: {
     id: string;
     colour: string;
@@ -127,10 +142,11 @@ export interface TokenDeleteEvent {
 
 // Token Drag Events
 export interface TokenDragStartEvent {
-  controlledToken: TokenState;
-  dragPosition: { x: number; y: number };
-  dragElevation: number;
-  placeableTokens: TokenState[];
+  timestamp: number;
+  allTokenAdapters: AbstractTokenAdapter[];
+  dragStartTokenAdaptor: AbstractTokenAdapter;
+  previewTokenAdapter: AbstractTokenAdapter;
+  ownedByCurrentUserActorAdapters: AbstractActorAdapter[];
   user: {
     id: string;
     colour: string;
@@ -139,10 +155,11 @@ export interface TokenDragStartEvent {
 }
 
 export interface TokenDragMoveEvent {
-  controlledToken: TokenState;
-  dragPosition: { x: number; y: number; elevation?: number };
-  dragElevation: number;
-  placeableTokens: TokenState[];
+  timestamp: number;
+  allTokenAdapters: AbstractTokenAdapter[];
+  dragStartTokenAdaptor: AbstractTokenAdapter;
+  previewTokenAdapter: AbstractTokenAdapter;
+  ownedByCurrentUserActorAdapters: AbstractActorAdapter[];
   user: {
     id: string;
     colour: string;
@@ -238,9 +255,9 @@ export interface KeyboardKeyDownEvent {
     alt: boolean;
     meta?: boolean;
   };
-  repeat?: boolean;
-  timestamp?: number;
-  placeableTokens: TokenState[];
+  timestamp: number;
+  allTokenAdapters: AbstractTokenAdapter[];
+  ownedByCurrentUserActorAdapters: AbstractActorAdapter[];
   user: {
     id: string;
     colour: string;
@@ -258,12 +275,27 @@ export interface KeyboardKeyUpEvent {
     meta?: boolean;
   };
   timestamp?: number;
-  placeableTokens: TokenState[];
   user: {
     id: string;
     colour: string;
     isGM: boolean;
   }
+}
+
+export interface MovementValidationRequest {
+  correlationId?: string; // Added by EventResponseWaiter
+  tokenId: string;
+  currentPosition: { x: number; y: number };
+  proposedPosition: { x: number; y: number };
+  userId: string;
+  timestamp: number;
+}
+
+export interface MovementValidationResponse {
+  correlationId?: string; // Must match request
+  approved: boolean;
+  reason?: string;
+  modifiedPosition?: { x: number; y: number };
 }
 
 // Settings Events

@@ -1,16 +1,6 @@
 /**
- * Overlay Rendering Service
- * 
  * Manages the lifecycle and rendering of visual overlays using PixiJS v7.
  * Provides a centralised service for rendering token-based and world-based overlays.
- * 
- * RESPONSIBILITIES:
- * - Manage PIXI container hierarchy for overlay rendering
- * - Create and destroy overlay containers based on canvas lifecycle
- * - Execute renderer functions for registered overlay types
- * - Handle overlay instance lifecycle (create, update, destroy)
- * - Support both token-mesh and world-space rendering targets
- * - Maintain overlay visibility and parent-child relationships
  */
 import type { EventBus } from '../../infrastructure/events/EventBus.js';
 import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRenderContext.js';
@@ -24,6 +14,7 @@ import { TokenBoundaryRenderer } from '../renderers/TokenBoundaryRenderer.js';
 import { ObstacleIndicatorRenderer } from '../renderers/ObstacleIndicatorRenderer.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
+import { ActorInfoRenderer } from '../renderers/ActorInfoRenderer.js';
 
 export class OverlayRenderingService implements InitialisableService {
   private readonly logger: FoundryLogger;
@@ -127,6 +118,7 @@ export class OverlayRenderingService implements InitialisableService {
     this.renderers.set('facing-arc', new FacingArcRenderer());
     this.renderers.set('token-boundary', new TokenBoundaryRenderer());
     this.renderers.set('obstacle-indicator', new ObstacleIndicatorRenderer());
+    this.renderers.set('actor-info', new ActorInfoRenderer());
 
     this.logger.debug('Initialised overlay renderers', {
       renderers: Array.from(this.renderers.keys())
@@ -141,7 +133,7 @@ export class OverlayRenderingService implements InitialisableService {
   private createMainContainer(): void {
     this.logger.info('Creating main overlay container');
     
-    const primaryGroup = canvas!.drawings;
+    const primaryGroup = canvas!.tokens;
     if (!primaryGroup) {
       throw new Error('Canvas primary group not available');
     }

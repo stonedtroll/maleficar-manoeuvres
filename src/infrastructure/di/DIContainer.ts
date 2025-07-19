@@ -1,32 +1,25 @@
 /**
- * Dependency Injection Container
- * 
  * Infrastructure layer component responsible for wiring up all services.
- * Pragmatic approach that balances clean architecture with simplicity.
  */
+
+import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
+
 import { CommandExecutor } from '../../application/commands/CommandExecutor.js';
 import { MovementValidator } from '../../domain/services/MovementValidator.js';
 import { SnapPositionCalculator } from '../../domain/services/SnapPositionCalculator.js';
-import { TokenStateAdapter } from '../../application/adapters/TokenStateAdapter.js';
 import { OptimisedCollisionDetector } from '../../domain/collision/OptimisedCollisionDetector.js';
 import { EventBus } from '../events/EventBus.js';
 import { FoundryLineOfSightChecker } from '../adapters/FoundryLineOfSightChecker.js';
-import { TokenDragDetector } from '../input/TokenDragDetector.js';
 import { KeyboardHandler } from '../input/KeyboardHandler.js';
-import { OverlayPermissionService } from '../../domain/services/OverlayPermissionService.js';
 import { OverlayRegistry } from '../../application/registries/OverlayRegistry.js';
-import { OverlayPermissionCoordinator } from '../../application/coordinators/OverlayPermissionCoordinator.js';
 import { OverlayRenderingService } from '../../presentation/services/OverlayRenderingService.js';
-import { TokenRotationCoordinator } from '../../application/coordinators/TokenRotationCoordinator.js';
 import { TokenMovementCoordinator } from '../../application/coordinators/TokenMovementCoordinator.js';
 import { TokenDragCoordinator } from '../../application/coordinators/TokenDragCoordinator.js';
 import { KeyboardCoordinator } from '../../application/coordinators/KeyboardCoordinator.js';
 import { ManoeuvreApplication } from '../../application/ManoeuvreApplication.js';
-import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 import { SystemEventAdapter } from '../adapters/SystemEventAdapter.js';
-import { FoundryTokenSightRepository } from '../repositories/FoundryTokenSightRepository.js';
 import { TokenMeshAdapter } from '../adapters/TokenMeshAdapter.js';
 import { AABB } from '../../domain/value-objects/AABB.js';
 import { Vector2 } from '../../domain/value-objects/Vector2.js';
@@ -56,71 +49,48 @@ export class DIContainer {
     try {
       // Infrastructure layer
       const eventBus = new EventBus();
-      const tokenDragDetector = new TokenDragDetector(eventBus);
       const keyboardHandler = new KeyboardHandler(eventBus);
       const systemEventAdapter = new SystemEventAdapter(eventBus);
       const tokenMeshAdapter = new TokenMeshAdapter();
       const tokenMovementService = new TokenMovementService(eventBus);
 
-      // Repository implementations
-      const tokenSightRepository = new FoundryTokenSightRepository();
-
-      // Domain services
-      // Get scene bounds from Foundry canvas
       const sceneBounds = new AABB(
         new Vector2(0, 0), // min point
-        new Vector2(canvas.dimensions?.width ?? 5000, canvas.dimensions?.height ?? 5000) // TODO: Write a canvas adapter
+        new Vector2(canvas?.dimensions?.width ?? 5000, canvas?.dimensions?.height ?? 5000) // TODO: Write a canvas adapter
       );
 
+      // Domain services
       const optimisedCollisionDetector = new OptimisedCollisionDetector(sceneBounds);
       const movementValidator = new MovementValidator(optimisedCollisionDetector);
       const snapCalculator = new SnapPositionCalculator(optimisedCollisionDetector);
       const lineOfSightChecker = new FoundryLineOfSightChecker();
-      const overlayPermissionService = new OverlayPermissionService(
-        lineOfSightChecker
-      );
 
       // Application services
       const commandExecutor = new CommandExecutor(eventBus);
-      const tokenStateAdapter = new TokenStateAdapter();
       const overlayRegistry = new OverlayRegistry();
-      const overlayPermissionCoordinator = new OverlayPermissionCoordinator(
-        overlayRegistry,
-        overlayPermissionService,
-        tokenSightRepository
-      );
-      
+
       // Registry
       const overlayContextBuilderRegistry = new OverlayContextBuilderRegistry();
 
       // Presentation services
       const overlayRenderer = new OverlayRenderingService(
-        overlayRegistry,  
+        overlayRegistry,
         eventBus,
         tokenMeshAdapter
       );
 
       // Coordinators
-      const tokenRotationCoordinator = new TokenRotationCoordinator(
-        overlayRegistry,
-        overlayPermissionCoordinator,
-        overlayRenderer,
-        eventBus
-      );
-
       const tokenMovementCoordinator = new TokenMovementCoordinator(
         commandExecutor,
         movementValidator,
         snapCalculator,
-        tokenStateAdapter,
         eventBus
       );
 
       const tokenDragCoordinator = new TokenDragCoordinator(
         overlayRenderer,
         overlayRegistry,
-        overlayPermissionCoordinator,
-        overlayContextBuilderRegistry,  
+        overlayContextBuilderRegistry,
         movementValidator,
         eventBus
       );
@@ -128,22 +98,17 @@ export class DIContainer {
       const keyboardCoordinator = new KeyboardCoordinator(
         overlayRenderer,
         overlayRegistry,
-        overlayPermissionCoordinator,
         overlayContextBuilderRegistry,
         eventBus
       );
 
       // Store all services
       this.services.set('eventBus', eventBus);
-      this.services.set('tokenDragDetector', tokenDragDetector);
       this.services.set('keyboardHandler', keyboardHandler);
       this.services.set('lineOfSightChecker', lineOfSightChecker);
-      this.services.set('overlayPermissionService', overlayPermissionService);
       this.services.set('overlayRegistry', overlayRegistry);
-      this.services.set('overlayPermissionCoordinator', overlayPermissionCoordinator);
       this.services.set('overlayContextBuilderRegistry', overlayContextBuilderRegistry);
       this.services.set('overlayRenderer', overlayRenderer);
-      this.services.set('tokenRotationCoordinator', tokenRotationCoordinator);
       this.services.set('tokenMovementCoordinator', tokenMovementCoordinator);
       this.services.set('tokenDragCoordinator', tokenDragCoordinator);
       this.services.set('keyboardCoordinator', keyboardCoordinator);
@@ -152,7 +117,6 @@ export class DIContainer {
       this.services.set('movementValidator', movementValidator);
       this.services.set('snapCalculator', snapCalculator);
       this.services.set('commandExecutor', commandExecutor);
-      this.services.set('tokenStateAdapter', tokenStateAdapter);
       this.services.set('tokenMovementService', tokenMovementService);
 
       // Initialise services that need it
@@ -222,7 +186,7 @@ export class DIContainer {
   createApplication(): ManoeuvreApplication {
     return new ManoeuvreApplication(
       this.get<EventBus>('eventBus'),
-      this.get<OverlayRegistry>('overlayRegistry')  
+      this.get<OverlayRegistry>('overlayRegistry')
     );
   }
 

@@ -1,26 +1,26 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
-import type { GridlessToken } from '../../../domain/entities/GridlessToken.js';
+import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
 import { MODULE_ID } from '../../../config.js';
+
+interface ObstacleIndicatorContextOptions {
+  isGM?: boolean;
+  userColour?: string;
+}
 
 /**
  * Context builder for obstacle indicator overlays.
  */
-export class ObstacleIndicatorContextBuilder implements OverlayContextBuilder {
+export class ObstacleIndicatorContextBuilder implements OverlayContextBuilder<ObstacleIndicatorContextOptions> {
   buildContext(
-    token: GridlessToken,
-    options: {
-      isGM: boolean;
-      userColour?: string;
-      activeKeys?: Set<string>;
-      [key: string]: any;
-    }
+    token: Token,
+    options: ObstacleIndicatorContextOptions
   ): OverlayRenderContext {
-    
+
     return {
       overlayTypeId: 'obstacle-indicator',
       renderTarget: 'world',
-      zIndex: 1000, 
+      zIndex: 300,
       overlayCentre: {
         x: token.centre.x,
         y: token.centre.y
@@ -51,7 +51,7 @@ export class ObstacleIndicatorContextBuilder implements OverlayContextBuilder {
         maintainAspectRatio: true
       },
       user: {
-        isGM: options.isGM
+        isGM: options.isGM ?? false
       }
     };
   }

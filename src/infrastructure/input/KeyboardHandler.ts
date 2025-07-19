@@ -1,21 +1,34 @@
 /**
- * Keyboard Handler
+ * Centralised keyboard event handling service. Manages keyboard input capture, state tracking, and event translation for both
+ * DOM keyboard events and Foundry VTT keybindings.
  * 
- * TODO: Pay technical debt to the debt troll.
- * 
- * Centralised keyboard event handling for the module.
- * Captures and translates DOM keyboard events and Foundry keybindings.
+ * Technical debt:
+ * TODO: Refactor modifier state management to use a more type-safe approach
+ * TODO: Consider extracting input filtering logic to a separate service
  */
 
-import { EventBus } from '../events/EventBus.js';
-import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
-import { MODULE_ID } from '../../config.js';
+import type { EventBus } from '../events/EventBus.js';
 import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
-import type { KeyboardKeyDownEvent, KeyboardKeyUpEvent, TokenState } from '../events/FoundryEvents.js';
+import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
+import type {
+  KeyboardKeyDownEvent,
+  KeyboardKeyUpEvent
+} from '../events/FoundryEvents.js';
+
+import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
+import { MODULE_ID } from '../../config.js';
+import { TokenRepository } from '../repositories/TokenRepository.js';
+import { ActorRepository } from '../repositories/ActorRepository.js';
+import { UserRepository } from '../repositories/UserRepository.js';
 
 export class KeyboardHandler implements InitialisableService {
+
   private readonly logger: FoundryLogger;
   private readonly eventBus: EventBus;
+  private readonly tokenRepository: TokenRepository;
+  private readonly actorRepository: ActorRepository;
+  private readonly userRepository: UserRepository;
+  
   private readonly activeKeys = new Set<string>();
   private readonly modifierState = {
     shift: false,
@@ -27,14 +40,21 @@ export class KeyboardHandler implements InitialisableService {
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus;
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.KeyboardHandler`);
+    this.tokenRepository = new TokenRepository();
+    this.actorRepository = new ActorRepository(this.tokenRepository);
+    this.userRepository = new UserRepository();
   }
 
+  // Public API - Lifecycle
+
+  /**
+   * Initialises the keyboard handler by registering event listeners.
+   */
   async initialise(): Promise<void> {
-    // Register DOM keyboard listeners
+
     document.addEventListener('keydown', this.handleKeyDown);
     document.addEventListener('keyup', this.handleKeyUp);
 
-    // Register Foundry keybindings after game is ready
     if (game?.ready) {
       this.registerKeybindings();
     } else {
@@ -44,8 +64,130 @@ export class KeyboardHandler implements InitialisableService {
     this.logger.info('Keyboard handler initialised');
   }
 
+  /**
+   * Tears down the keyboard handler by removing all event listeners.
+   * Clears internal state to prevent memory leaks.
+   */
+  async tearDown(): Promise<void> {
+    document.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('keyup', this.handleKeyUp);
+    this.activeKeys.clear();
+    
+    this.logger.info('Keyboard handler torn down');
+  }
+
+  // Private Methods - Event Handling
+
+  /**
+   * Handles DOM keydown events.
+   * Tracks key state and emits domain events.
+   */
+  private handleKeyDown = (event: KeyboardEvent): void => {
+    this.updateModifierState(event);
+
+    if (this.shouldIgnoreKeyboardEvent()) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+    
+    // Ignore repeated events while key is held
+    if (event.repeat || this.activeKeys.has(key)) {
+      return;
+    }
+    
+    this.activeKeys.add(key);
+    this.emitKeyboardKeyDownEvent(key, event.code);
+  };
+
+  /**
+   * Handles DOM keyup events.
+   * Updates key state and emits domain events.
+   */
+  private handleKeyUp = (event: KeyboardEvent): void => {
+    this.updateModifierState(event);
+
+    if (this.shouldIgnoreKeyboardEvent()) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+    this.activeKeys.delete(key);
+    
+    this.emitKeyboardKeyUpEvent(key, event.code);
+  };
+
+  // Private Methods - Event Emission
+
+  /**
+   * Emits keyboard key down event with game context.
+   */
+  private emitKeyboardKeyDownEvent(key: string, code: string): void {
+    if (!this.validateGameState()) {
+      return;
+    }
+
+    const keyDownEvent: KeyboardKeyDownEvent = {
+      key,
+      code,
+      modifiers: { ...this.modifierState },
+      timestamp: Date.now(),
+      user: this.userRepository.getCurrentUserContext(),
+      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
+      ownedByCurrentUserActorAdapters: this.actorRepository.getFromOwnedTokensAsAdapters(),
+    };
+
+    this.logger.debug(`Key pressed`, {
+      key: keyDownEvent.key,
+      code: keyDownEvent.code,
+      modifiers: keyDownEvent.modifiers,
+      timestamp: keyDownEvent.timestamp,
+      user: keyDownEvent.user,
+    });
+
+    this.eventBus.emit('keyboard:keyDown', keyDownEvent);
+  }
+
+  /**
+   * Emits keyboard key up event.
+   */
+  private emitKeyboardKeyUpEvent(key: string, code: string): void {
+    if (!this.validateGameState()) {
+      return;
+    }
+
+    const keyUpEvent: KeyboardKeyUpEvent = {
+      key,
+      code,
+      modifiers: { ...this.modifierState },
+      timestamp: Date.now(),
+      user: this.userRepository.getCurrentUserContext(),
+    };
+
+    this.logger.debug(`Key released`, {
+      key: keyUpEvent.key,
+      code: keyUpEvent.code,
+      modifiers: keyUpEvent.modifiers,
+      timestamp: keyUpEvent.timestamp,
+      user: keyUpEvent.user,
+    });
+
+    this.eventBus.emit('keyboard:keyUp', keyUpEvent);
+  }
+
+  // Private Methods - Keybinding Registration
+
+  /**
+   * Registers module keybindings with Foundry VTT.
+   * Configures the 'M' key for overlay toggling.
+   */
   private registerKeybindings(): void {
     this.logger.info('Registering keybindings');
+
+    if (!game.keybindings) {
+      this.logger.warn('Keybindings not available, skipping registration');
+      return;
+    }
 
     try {
       game.keybindings.register(MODULE_ID, 'toggleOverlay', {
@@ -55,8 +197,8 @@ export class KeyboardHandler implements InitialisableService {
           key: 'KeyM',
           modifiers: []
         }],
-        onDown: () => this.emitKeyboardEvent('m', 'KeyM', false),
-        onUp: () => this.emitKeyboardEvent('m', 'KeyM', true),
+        onDown: () => this.emitKeyboardKeyDownEvent('m', 'KeyM'),
+        onUp: () => this.emitKeyboardKeyUpEvent('m', 'KeyM'),
         precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
       });
 
@@ -66,57 +208,39 @@ export class KeyboardHandler implements InitialisableService {
     }
   }
 
-  async tearDown(): Promise<void> {
-    document.removeEventListener('keydown', this.handleKeyDown);
-    document.removeEventListener('keyup', this.handleKeyUp);
-    this.activeKeys.clear();
-  }
+  // Private Methods - Input Filtering
 
-  private isInputFocused(): boolean {
-    const activeElement = document.activeElement;
-    return activeElement instanceof HTMLInputElement ||
-           activeElement instanceof HTMLTextAreaElement ||
-           activeElement instanceof HTMLSelectElement ||
-           activeElement?.getAttribute('contenteditable') === 'true';
-  }
-
+  /**
+   * Determines whether keyboard events should be ignored based on UI context.
+   * Prevents interference with text input and UI interactions.
+   */
   private shouldIgnoreKeyboardEvent(): boolean {
     // Ignore if typing in input fields
-    if (this.isInputFocused()) {
-      return true;
-    }
-
-    // Ignore if UI elements are active
-    const activeControl = ui.controls?.control;
-    const hasActiveControlTool = activeControl && activeControl.activeTool !== 'select';
-    const hasOpenWindows = Object.keys(ui.windows).length > 0;
-
-    if (hasActiveControlTool || hasOpenWindows) {
+    if (this.isInputFieldFocused()) {
+      this.logger.debug('Ignoring keyboard event: input field focused');
       return true;
     }
 
     return false;
   }
 
-  private extractTokenState(token: Token): TokenState {
-    return {
-      id: token.id,
-      name: token.name || 'Eldritch',
-      ownedByCurrentUser: token.isOwner,
-      controlled: token.controlled,
-      visible: token.visible,
-      x: token.x,
-      y: token.y,
-      width: token.w,
-      height: token.h,
-      rotation: token.document.rotation,
-      elevation: token.document.elevation,
-      scale: token.document.scale, 
-      hidden: token.document.hidden,
-      disposition: token.document.disposition
-    };
+  /**
+   * Checks if an input field has focus.
+   */
+  private isInputFieldFocused(): boolean {
+    const activeElement = document.activeElement;
+    
+    return activeElement instanceof HTMLInputElement ||
+           activeElement instanceof HTMLTextAreaElement ||
+           activeElement instanceof HTMLSelectElement ||
+           activeElement?.getAttribute('contenteditable') === 'true';
   }
 
+  // Private Methods - State Management
+
+  /**
+   * Updates modifier key state from keyboard event.
+   */
   private updateModifierState(event: KeyboardEvent): void {
     this.modifierState.shift = event.shiftKey;
     this.modifierState.ctrl = event.ctrlKey;
@@ -124,56 +248,15 @@ export class KeyboardHandler implements InitialisableService {
     this.modifierState.meta = event.metaKey;
   }
 
-  private emitKeyboardEvent(key: string, code: string, isUp: boolean): void {
-    if (!game?.ready || !game.user) {
+  /**
+   * Validates that the game is in a valid state for processing events.
+   */
+  private validateGameState(): boolean {
+    if (!this.userRepository.isReady()) {
       this.logger.warn('Game or user not ready, skipping keyboard event');
-      return;
+      return false;
     }
-
-    const placeableTokens = canvas?.ready && canvas.tokens
-      ? (canvas.tokens.placeables as Token[]).map((t: Token) => this.extractTokenState(t))
-      : [];
-
-    const baseEvent = {
-      key,
-      code,
-      modifiers: { ...this.modifierState },
-      timestamp: Date.now(),
-      user: {
-        isGM: game.user.isGM,
-        id: game.user.id,
-        colour: game.user.color.toString()
-      },
-      placeableTokens
-    };
-
-    if (isUp) {
-      this.eventBus.emit('keyboard:keyUp', baseEvent as KeyboardKeyUpEvent);
-    } else {
-      this.eventBus.emit('keyboard:keyDown', { ...baseEvent, repeat: false } as KeyboardKeyDownEvent);
-    }
+    
+    return true;
   }
-
-  private handleKeyDown = (event: KeyboardEvent): void => {
-    this.updateModifierState(event);
-    
-    if (this.shouldIgnoreKeyboardEvent()) return;
-
-    const key = event.key.toLowerCase();
-    if (event.repeat || this.activeKeys.has(key)) return;
-    this.activeKeys.add(key);
-
-    this.emitKeyboardEvent(key, event.code, false);
-  };
-
-  private handleKeyUp = (event: KeyboardEvent): void => {
-    this.updateModifierState(event);
-    
-    if (this.shouldIgnoreKeyboardEvent()) return;
-
-    const key = event.key.toLowerCase();
-    this.activeKeys.delete(key);
-
-    this.emitKeyboardEvent(key, event.code, true);
-  };
 }

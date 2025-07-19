@@ -23,6 +23,7 @@ export class ObstacleIndicatorRenderer {
     async render(graphics: PIXI.Graphics, context: OverlayRenderContext): Promise<void> {
         // Clear any existing drawings
         graphics.clear();
+        graphics.removeChildren();
 
         // Extract obstacle indicator properties
         const imagePath = context.obstacle?.imagePath ?? `modules/${MODULE_ID}/assets/images/obstacle-indicator.webp`;

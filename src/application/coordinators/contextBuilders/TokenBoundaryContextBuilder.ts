@@ -1,21 +1,21 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
-import type { GridlessToken } from '../../../domain/entities/GridlessToken.js';
+import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
+
+interface TokenBoundaryContextOptions {
+  isGM?: boolean;
+  userColour?: string;
+}
 
 /**
  * Context builder for token boundary overlays.
  */
-export class TokenBoundaryContextBuilder implements OverlayContextBuilder {
+export class TokenBoundaryContextBuilder implements OverlayContextBuilder<TokenBoundaryContextOptions> {
   buildContext(
-    token: GridlessToken,
-    options: {
-      isGM: boolean;
-      userColour?: string;
-      activeKeys?: Set<string>;
-      [key: string]: any;
-    }
+    token: Token,
+    options: TokenBoundaryContextOptions
   ): OverlayRenderContext {
-    
+
     return {
       overlayTypeId: 'token-boundary',
       renderTarget: 'world',
@@ -52,7 +52,7 @@ export class TokenBoundaryContextBuilder implements OverlayContextBuilder {
         gapLength: 0
       },
       user: {
-        isGM: options.isGM
+        isGM: options.isGM ?? false
       }
     };
   }
