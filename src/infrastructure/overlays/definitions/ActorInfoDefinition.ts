@@ -7,8 +7,20 @@ export const ActorInfoDefinition: OverlayDefinition = {
   category: 'information',
   enabledByDefault: true,
   visibleOnStart: false,
-  renderTarget: 'world',
+  renderLayer: 'drawings',
+  renderOnTokenMesh: false,
+  zIndex: 500,
 
+  styling: {
+    speeds: {
+      font: 'Roboto Condensed',
+      fontSize: 8,
+      fontColour: '#D4C8B8',
+      fontWeight: '400',
+      fontOpacity: 1
+    }
+  },
+  
   permissions: {
     requireLOS: false,
     requireGM: false,
@@ -39,6 +51,5 @@ export const ActorInfoDefinition: OverlayDefinition = {
     visionChange: false,
     wallChange: false,
     gridChange: false,
-
   }
 };

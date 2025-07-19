@@ -1,6 +1,8 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
 import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
+import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
+
 import { MODULE_ID } from '../../../config.js';
 
 interface ObstacleIndicatorContextOptions {
@@ -14,13 +16,16 @@ interface ObstacleIndicatorContextOptions {
 export class ObstacleIndicatorContextBuilder implements OverlayContextBuilder<ObstacleIndicatorContextOptions> {
   buildContext(
     token: Token,
+    overlayDefinition: OverlayDefinition,
     options: ObstacleIndicatorContextOptions
   ): OverlayRenderContext {
 
     return {
       overlayTypeId: 'obstacle-indicator',
-      renderTarget: 'world',
-      zIndex: 300,
+      renderLayer: overlayDefinition.renderLayer,
+      renderOnTokenMesh: overlayDefinition.renderOnTokenMesh,
+      zIndex: overlayDefinition.zIndex,
+      ...(overlayDefinition.styling && { styling: overlayDefinition.styling }),
       overlayCentre: {
         x: token.centre.x,
         y: token.centre.y

@@ -95,12 +95,6 @@ interface SpeedContext {
 
   icon: string;
   label: string;
-  font: string;
-  fontSize: number;
-  fontColour: string;
-  fontOpacity: number;
-  backgroundColour?: string;
-  backgroundOpacity?: number;
 }
 
 interface UserInfo {
@@ -118,7 +112,7 @@ type RenderPriority = 'low' | 'normal' | 'high';
 /**
  * Render target types.
  */
-export type RenderTarget = 'world' | 'mesh';
+export type RenderLayer = 'primary' | 'token' | 'drawings';
 
 /**
  * Context data passed to overlay render functions.
@@ -129,9 +123,19 @@ export interface OverlayRenderContext {
 
   overlayTypeId: string;
   overlayCentre: { x: number; y: number };
-  renderTarget: RenderTarget;
+  renderLayer: RenderLayer;
   zIndex?: number;
+  renderOnTokenMesh: boolean;
   token: TokenInfo;
+  styling?: {
+    [key: string]: {
+      font: string;
+      fontSize: number;
+      fontColour: string;
+      fontWeight: string;
+      fontOpacity: number;
+    };
+  };
   actorInfo?: actorInfoContext;
   rotation?: RotationContext;
   boundary?: BoundaryContext;

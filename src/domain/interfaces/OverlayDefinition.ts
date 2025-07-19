@@ -1,6 +1,6 @@
 import type { GridTypeSupport } from './GridTypeSupport.js';
 import type { OverlayContextBuilder } from './OverlayContextBuilder.js';
-import type { RenderTarget } from './OverlayRenderContext.js';
+import type { RenderLayer } from './OverlayRenderContext.js';
 import type { Token } from '../entities/Token.js';
 
 export interface UpdateTriggers {
@@ -46,7 +46,9 @@ export interface OverlayDefinition {
   category: string;
   enabledByDefault: boolean;
   visibleOnStart: boolean;
-  renderTarget: RenderTarget;
+  renderLayer: RenderLayer;
+  renderOnTokenMesh: boolean;
+  zIndex: number;
 
   contextBuilder?: OverlayContextBuilder;
 
@@ -60,4 +62,14 @@ export interface OverlayDefinition {
   displayOn: GridTypeSupport;
   triggers: OverlayTriggers;
   updateOn: UpdateTriggers;
+  
+  styling?: {
+    [key: string]: {
+      font: string;
+      fontSize: number;
+      fontColour: string;
+      fontWeight: string;
+      fontOpacity: number;
+    };
+  };
 }

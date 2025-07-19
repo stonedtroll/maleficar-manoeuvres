@@ -7,7 +7,9 @@ export const FacingArcDefinition: OverlayDefinition = {
   category: 'visual',
   enabledByDefault: true,
   visibleOnStart: false,
-  renderTarget: 'world',
+  renderLayer: 'drawings',
+  renderOnTokenMesh: false,
+  zIndex: 500,
   
   permissions: {
     requireLOS: true,

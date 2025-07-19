@@ -49,6 +49,15 @@ const config = {
                     console.log('Language directory copied to dist/lang');
                 }
 
+                // Copy styles folder
+                const stylesDir = resolve('styles');
+                const destStylesDir = resolve('dist', 'styles');
+
+                if (fs.existsSync(stylesDir)) {
+                    copyDir(stylesDir, destStylesDir);
+                    console.log('Styles directory copied to dist/styles');
+                }
+
                 // Copy assets folder (including your obstacle-indicator.webp)
                 const assetsDir = resolve('assets');
                 const destAssetsDir = resolve('dist', 'assets');

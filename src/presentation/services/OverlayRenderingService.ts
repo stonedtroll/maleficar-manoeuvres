@@ -1,8 +1,8 @@
 /**
  * Manages the lifecycle and rendering of visual overlays using PixiJS v7.
- * Provides a centralised service for rendering token-based and world-based overlays.
+ * Provides a centralised service for rendering token-based and world-based overlays
+ * with support for rendering on different canvas layers.
  */
-import type { EventBus } from '../../infrastructure/events/EventBus.js';
 import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRenderContext.js';
 import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
 import type { TokenMeshAdapter } from '../../infrastructure/adapters/TokenMeshAdapter.js';
@@ -18,7 +18,7 @@ import { ActorInfoRenderer } from '../renderers/ActorInfoRenderer.js';
 
 export class OverlayRenderingService implements InitialisableService {
   private readonly logger: FoundryLogger;
-  private overlayContainer?: OverlayContainer;
+  private readonly layerContainers = new Map<string, OverlayContainer>();
   private readonly overlayTypeContainers = new Map<string, PIXI.Container>();
   private readonly overlayInstances = new Map<string, PIXI.Graphics>();
   private readonly renderers = new Map<string, any>();
@@ -26,14 +26,29 @@ export class OverlayRenderingService implements InitialisableService {
 
   // Configuration constants
   private static readonly CONFIG = {
-    CONTAINER_Z_INDEX: 500,
     INSTANCE_KEY_SEPARATOR: '-',
-    TYPE_CONTAINER_PREFIX: 'overlay-type-'
+    TYPE_CONTAINER_PREFIX: 'overlay-type-',
+    LAYER_CONTAINER_PREFIX: 'overlay-layer-',
+    // Layer-specific z-index values
+    LAYER_Z_INDICES: {
+      background: 100,
+      grid: 200, 
+      drawings: 300,
+      walls: 400,
+      tiles: 450,
+      tokens: 500,
+      lighting: 600,
+      weather: 700,
+      foreground: 800,
+      interface: 900,
+      controls: 1000
+    },
+    // Default z-index for unknown layers
+    DEFAULT_Z_INDEX: 500
   } as const;
 
   constructor(
     private readonly overlayRegistry: OverlayRegistry,
-    private readonly eventBus: EventBus,
     private readonly tokenMeshAdapter: TokenMeshAdapter
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.OverlayRenderingService`);
@@ -97,17 +112,37 @@ export class OverlayRenderingService implements InitialisableService {
   private performInitialisation(): void {
     try {
       this.validateCanvas();
-      this.createMainContainer();
+      this.createLayerContainers();
       this.setupHooks();
-      this.isInitialised = true;
       
-      this.logger.info('Overlay rendering service initialised successfully', {
-        hasContainer: !!this.overlayContainer,
-        containerParent: this.overlayContainer?.parent?.constructor.name
-      });
+      // Only mark as initialised if we actually created containers
+      if (this.layerContainers.size > 0) {
+        this.isInitialised = true;
+        this.logger.info('Overlay rendering service initialised successfully', {
+          layerContainers: this.layerContainers.size,
+          layers: Array.from(this.layerContainers.keys())
+        });
+      } else {
+        // Always create at least the tokens layer container as fallback
+        this.createDefaultLayerContainer();
+        this.isInitialised = true;
+        this.logger.warn('No overlay layers configured, created default tokens layer container');
+      }
     } catch (error) {
       this.logger.error('Failed to perform initialisation', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create default tokens layer container as fallback
+   */
+  private createDefaultLayerContainer(): void {
+    const tokensLayer = canvas?.tokens;
+    if (tokensLayer) {
+      this.createLayerContainer('tokens', tokensLayer);
+    } else {
+      throw new Error('Could not create default layer container - tokens layer not available');
     }
   }
 
@@ -128,28 +163,95 @@ export class OverlayRenderingService implements InitialisableService {
   // Container Management
 
   /**
-   * Create the main overlay container and add to canvas
+   * Create containers on appropriate canvas layers based on overlay configurations
    */
-  private createMainContainer(): void {
-    this.logger.info('Creating main overlay container');
+  private createLayerContainers(): void {
+    this.logger.info('Creating layer containers');
+
+    // Get all unique render layers from registered overlays
+    const renderLayers = this.getUniqueRenderLayers();
     
-    const primaryGroup = canvas!.tokens;
-    if (!primaryGroup) {
-      throw new Error('Canvas primary group not available');
+    for (const layerName of renderLayers) {
+      const layer = this.getCanvasLayer(layerName);
+      if (layer) {
+        this.createLayerContainer(layerName, layer);
+      } else {
+        this.logger.warn(`Canvas layer not found: ${layerName}`);
+      }
+    }
+  }
+
+  /**
+   * Get unique render layers from all registered overlays
+   */
+  private getUniqueRenderLayers(): Set<string> {
+    const layers = new Set<string>();
+    
+    // Always include tokens layer as default
+    layers.add('tokens');
+    
+    for (const overlay of this.overlayRegistry.getAll()) {
+      const layer = overlay.renderLayer || 'tokens';
+      layers.add(layer);
     }
     
-    // Create and configure container
-    this.overlayContainer = new OverlayContainer();
-    primaryGroup.addChild(this.overlayContainer);
+    return layers;
+  }
+
+  /**
+   * Get a specific canvas layer by name
+   */
+  private getCanvasLayer(layerName: string): CanvasLayer | null {
+    if (!canvas) return null;
     
-    // Configure rendering order
-    this.overlayContainer.zIndex = OverlayRenderingService.CONFIG.CONTAINER_Z_INDEX;
-    primaryGroup.sortableChildren = true;
-    primaryGroup.sortChildren();
+    // Map layer names to actual canvas layer objects
+    switch (layerName) {
+      case 'drawings':
+        return canvas.drawings ?? null;
+      case 'walls':
+        return canvas.walls ?? null;
+      case 'tiles':
+        return canvas.tiles ?? null;
+      case 'tokens':
+        return canvas.tokens ?? null;
+      case 'lighting':
+        return canvas.lighting ?? null;
+      case 'weather':
+        return canvas.weather ?? null;
+      case 'controls':
+        return canvas.controls ?? null;
+      default:
+        // Try to access custom layer
+        return (canvas as any)[layerName] ?? null;
+    }
+  }
+
+  /**
+   * Create a container on a specific canvas layer
+   */
+  private createLayerContainer(layerName: string, layer: CanvasLayer): void {
+    const container = new OverlayContainer();
+    container.name = `${OverlayRenderingService.CONFIG.LAYER_CONTAINER_PREFIX}${layerName}`;
     
-    this.logger.info('Main overlay container created', {
-      zIndex: this.overlayContainer.zIndex,
-      index: primaryGroup.getChildIndex(this.overlayContainer)
+    // Set z-index based on layer
+    const zIndex = OverlayRenderingService.CONFIG.LAYER_Z_INDICES[layerName as keyof typeof OverlayRenderingService.CONFIG.LAYER_Z_INDICES] 
+      || OverlayRenderingService.CONFIG.DEFAULT_Z_INDEX;
+    container.zIndex = zIndex;
+    
+    // Add to the layer
+    layer.addChild(container);
+    
+    // Enable sorting if supported
+    if ('sortableChildren' in layer) {
+      (layer as any).sortableChildren = true;
+      (layer as any).sortChildren?.();
+    }
+    
+    this.layerContainers.set(layerName, container);
+    
+    this.logger.info(`Created layer container for ${layerName}`, {
+      layerName: layer.constructor.name,
+      zIndex: container.zIndex
     });
   }
 
@@ -172,6 +274,16 @@ export class OverlayRenderingService implements InitialisableService {
    * Create a new type-specific container
    */
   private createTypeContainer(overlayTypeId: string): PIXI.Container {
+    // Get overlay definition to determine target layer
+    const overlayDef = this.overlayRegistry.get(overlayTypeId);
+    if (!overlayDef) {
+      throw new Error(`Overlay definition not found: ${overlayTypeId}`);
+    }
+    
+    // Determine which layer container to use
+    const renderLayer = overlayDef.renderLayer || 'tokens';
+    const layerContainer = this.getLayerContainer(renderLayer);
+    
     const container = new PIXI.Container();
     container.name = `${OverlayRenderingService.CONFIG.TYPE_CONTAINER_PREFIX}${overlayTypeId}`;
     container.sortableChildren = true;
@@ -179,9 +291,41 @@ export class OverlayRenderingService implements InitialisableService {
     container.renderable = true;
     container.eventMode = 'none';
     
-    this.overlayContainer!.addChild(container);
+    // Apply overlay-specific z-index if provided
+    if (overlayDef.zIndex !== undefined) {
+      container.zIndex = overlayDef.zIndex;
+      layerContainer.sortableChildren = true;
+      layerContainer.sortChildren();
+    }
     
-    this.logger.debug(`Created type container for ${overlayTypeId}`);
+    layerContainer.addChild(container);
+    
+    this.logger.debug(`Created type container for ${overlayTypeId} on ${renderLayer} layer`, {
+      renderLayer,
+      zIndex: container.zIndex,
+      parentContainer: layerContainer.name
+    });
+    
+    return container;
+  }
+
+  /**
+   * Get the appropriate layer container
+   */
+  private getLayerContainer(layerName: string): OverlayContainer {
+    const container = this.layerContainers.get(layerName);
+    
+    if (!container) {
+      // Fallback to tokens layer
+      const defaultContainer = this.layerContainers.get('tokens');
+      if (!defaultContainer) {
+        throw new Error(`No layer container available for layer: ${layerName}`);
+      }
+      
+      this.logger.warn(`Layer container not found for ${layerName}, using tokens layer`);
+      return defaultContainer;
+    }
+    
     return container;
   }
 
@@ -224,10 +368,11 @@ export class OverlayRenderingService implements InitialisableService {
     context: OverlayRenderContext
   ): { graphics: PIXI.Graphics; parentContainer: PIXI.Container } {
     
-    if (context.renderTarget === 'mesh') {
+    // Check if context specifies mesh rendering
+    if (context.renderOnTokenMesh) {
       return this.prepareTokenMeshGraphics(instanceKey, context);
     } else {
-      return this.prepareWorldGraphics(instanceKey, context);
+      return this.prepareLayerGraphics(instanceKey, context);
     }
   }
 
@@ -253,15 +398,15 @@ export class OverlayRenderingService implements InitialisableService {
       return { graphics, parentContainer: tokenMesh };
     }
     
-    // Fallback to world container
-    this.logger.warn(`Token mesh not found for ${context.token.id}, using world container`);
-    return this.prepareWorldGraphics(instanceKey, context);
+    // Fallback to layer container
+    this.logger.warn(`Token mesh not found for ${context.token.id}, using layer container`);
+    return this.prepareLayerGraphics(instanceKey, context);
   }
 
   /**
-   * Prepare graphics for world space rendering
+   * Prepare graphics for layer-based rendering
    */
-  private prepareWorldGraphics(
+  private prepareLayerGraphics(
     instanceKey: string,
     context: OverlayRenderContext
   ): { graphics: PIXI.Graphics; parentContainer: PIXI.Container } {
@@ -270,12 +415,12 @@ export class OverlayRenderingService implements InitialisableService {
     const graphics = this.getOrCreateGraphicsInstance(instanceKey, typeContainer);
 
     const position = context.overlayCentre;
-      
     graphics.position.set(position.x, position.y);
     
-    this.logger.debug('Rendering on world container', {
+    this.logger.debug('Rendering on layer container', {
       instanceKey,
-      position: graphics.position
+      position: graphics.position,
+      layer: typeContainer.parent?.name
     });
     
     return { graphics, parentContainer: typeContainer };
@@ -382,11 +527,12 @@ export class OverlayRenderingService implements InitialisableService {
     this.overlayTypeContainers.forEach(container => container.destroy({ children: true }));
     this.overlayTypeContainers.clear();
     
-    // Destroy main container
-    if (this.overlayContainer) {
-      this.overlayContainer.destroy({ children: true });
-      delete this.overlayContainer;
-    }
+    // Destroy layer containers
+    this.layerContainers.forEach((container) => {
+      container.parent?.removeChild(container);
+      container.destroy({ children: true });
+    });
+    this.layerContainers.clear();
     
     this.isInitialised = false;
     this.logger.debug('Destroyed all overlay containers');
@@ -542,8 +688,14 @@ export class OverlayRenderingService implements InitialisableService {
    * Validate service is initialised
    */
   private validateInitialised(): void {
-    if (!this.overlayContainer) {
-      throw new Error('Overlay container not initialised');
+    if (!this.isInitialised) {
+      throw new Error('Overlay service not initialised');
+    }
+    
+    // Double-check we have at least one container
+    if (!this.layerContainers.size) {
+      this.logger.error('Service marked as initialised but no layer containers exist');
+      throw new Error('Overlay service has no layer containers');
     }
   }
 

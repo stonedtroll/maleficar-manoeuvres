@@ -8,7 +8,6 @@ import type { OverlayRenderingService } from '../../../presentation/services/Ove
 import type { OverlayDefinition, TargetScope, OverlayTriggers } from '../../../domain/interfaces/OverlayDefinition.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
 import type { FoundryLogger } from '../../../../lib/log4foundry/log4foundry.js';
-import type { OverlayRegistry } from '../../registries/OverlayRegistry.js';
 import type { OverlayContextBuilderRegistry } from '../../registries/OverlayContextBuilderRegistry.js';
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
 import type { Actor } from '../../../domain/entities/Actor.js';
@@ -89,76 +88,6 @@ export class OverlayCoordinatorHelper {
 
         return processedGroups;
     }
-
-    // Public API - Overlay Filtering
-
-    /**
-     * Filters overlays by trigger type.
-     */
-    // filterOverlaysByTrigger(
-    //     trigger: keyof OverlayTriggers,
-    //     overlayRegistry: OverlayRegistry
-    // ): OverlayDefinition[] {
-    //     return overlayRegistry.getAll().filter(overlay => {
-    //         const triggerValue = overlay.triggers[trigger];
-
-    //         if (!triggerValue) {
-    //             return false;
-    //         }
-
-    //         // Handle trigger configs (objects with scope property)
-    //         if (typeof triggerValue === 'object' && triggerValue !== null && !Array.isArray(triggerValue)) {
-    //             // For keyPress with keys array
-    //             if (trigger === 'keyPress' && 'keys' in triggerValue) {
-    //                 return (triggerValue.keys?.length ?? 0) > 0;
-    //             }
-
-    //             // Any object trigger config is considered enabled
-    //             return true;
-    //         }
-
-    //         // Handle modifier key arrays - non-empty array means enabled
-    //         if (Array.isArray(triggerValue)) {
-    //             return triggerValue.length > 0;
-    //         }
-
-    //         // Handle function predicates - presence means enabled
-    //         if (typeof triggerValue === 'function') {
-    //             return true;
-    //         }
-
-    //         return false;
-    //     });
-
-    // }
-
-    // /**
-    //  * Filters overlays by a specific key press trigger.
-    //  */
-    // filterOverlaysByTriggerKey(
-    //     triggerKey: string,
-    //     overlayRegistry: OverlayRegistry
-    // ): OverlayDefinition[] {
-    //     return overlayRegistry.getAll().filter(overlay => {
-    //         const keyPressTrigger = overlay.triggers.keyPress;
-
-    //         if (!keyPressTrigger) {
-    //             return false;
-    //         }
-
-    //         // Handle boolean keyPress (shouldn't have specific keys)
-    //         if (typeof keyPressTrigger === 'boolean') {
-    //             return false;
-    //         }
-
-    //         // Check if it's a KeyPressTriggerConfig with keys
-    //         if ('keys' in keyPressTrigger && keyPressTrigger.keys?.length) {
-    //             return keyPressTrigger.keys.includes(triggerKey.toLowerCase());
-    //         }
-
-    //         return false;
-    //     });
-    // }
 
     // Public API - Token Filtering
 
@@ -304,8 +233,13 @@ export class OverlayCoordinatorHelper {
         actors?: Actor[]
     ): OverlayRenderContext {
         const overlay = overlaysWithBuilders.find(o => o.id === overlayId);
-        const contextBuilder = overlay?.contextBuilder ||
-            this.getContextBuilder({ id: overlayId } as OverlayDefinition, contextBuilderRegistry);
+        
+        if (!overlay) {
+            throw new Error(`Overlay definition not found for ${overlayId}`);
+        }
+        
+        const contextBuilder = overlay.contextBuilder ||
+            this.getContextBuilder(overlay, contextBuilderRegistry);
 
         if (!contextBuilder) {
             throw new Error(`No context builder found for overlay ${overlayId}`);
@@ -318,7 +252,7 @@ export class OverlayCoordinatorHelper {
             actors
         );
 
-        return contextBuilder.buildContext(targetToken, contextOptions);
+        return contextBuilder.buildContext(targetToken, overlay, contextOptions);
     }
 
     // Public API - Rendering

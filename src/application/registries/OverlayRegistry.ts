@@ -200,13 +200,6 @@ export class OverlayRegistry {
     }
 
     /**
-     * Filters overlays by render target.
-     */
-    filterByRenderTarget(renderTarget: 'world' | 'interface'): OverlayDefinition[] {
-        return this.getAll().filter(definition => definition.renderTarget === renderTarget);
-    }
-
-    /**
      * Gets all unique overlay categories.
      */
     getCategories(): string[] {

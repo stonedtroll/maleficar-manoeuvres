@@ -1,6 +1,8 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
 import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
+import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
+
 import { DISPOSITION } from '../../../domain/constants/TokenDisposition.js';
 
 /**
@@ -26,13 +28,17 @@ interface FacingArcContextOptions {
 export class FacingArcContextBuilder implements OverlayContextBuilder<FacingArcContextOptions> {
   buildContext(
     token: Token,
+    overlayDefinition: OverlayDefinition,
     options: FacingArcContextOptions
   ): OverlayRenderContext {
     const arcColour = this.determineArcColour(token, options.userColour);
 
     return {
       overlayTypeId: 'facing-arc',
-      renderTarget: 'world',
+      renderLayer: overlayDefinition.renderLayer,
+      renderOnTokenMesh: overlayDefinition.renderOnTokenMesh,
+      zIndex: overlayDefinition.zIndex,
+      ...(overlayDefinition.styling && { styling: overlayDefinition.styling }),
       overlayCentre: {
         x: token.centre.x,
         y: token.centre.y

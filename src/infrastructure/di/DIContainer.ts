@@ -75,7 +75,6 @@ export class DIContainer {
       // Presentation services
       const overlayRenderer = new OverlayRenderingService(
         overlayRegistry,
-        eventBus,
         tokenMeshAdapter
       );
 

@@ -2,6 +2,7 @@ import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayCo
 import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
 import type { Actor } from '../../../domain/entities/Actor.js';
+import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
 interface ActorInfoContextOptions {
   isGM?: boolean;
@@ -15,6 +16,7 @@ interface ActorInfoContextOptions {
 export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoContextOptions> {
   buildContext(
     targetToken: Token,
+    overlayDefinition: OverlayDefinition,
     options: ActorInfoContextOptions
   ): OverlayRenderContext {
 
@@ -28,17 +30,15 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
         .filter(speed => speed.rate > 0)
         .map(speed => ({
           label: speed.toString(),
-          font: 'Arial',
-          fontSize: 8,
-          fontColour: '#D4C8B8',
-          fontOpacity: 1,
           icon: speed.icon,
         })) : [];
 
     return {
       overlayTypeId: 'actor-info',
-      renderTarget: 'world',
-      zIndex: 500,
+      renderLayer: overlayDefinition.renderLayer,
+      renderOnTokenMesh: overlayDefinition.renderOnTokenMesh,
+      zIndex: overlayDefinition.zIndex,
+      ...(overlayDefinition.styling && { styling: overlayDefinition.styling }),
       overlayCentre: {
         x: targetToken.centre.x,
         y: targetToken.centre.y

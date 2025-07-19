@@ -1,4 +1,5 @@
 import type { Token } from '../entities/Token.js';
+import { OverlayDefinition } from './OverlayDefinition.js';
 import type { OverlayRenderContext } from './OverlayRenderContext.js';
 
 export interface BaseContextOptions {
@@ -10,5 +11,5 @@ export interface BaseContextOptions {
  * Interface for building overlay-specific render contexts.
  */
 export interface OverlayContextBuilder<TOptions extends BaseContextOptions = BaseContextOptions> {
-  buildContext(targetToken: Token, options: TOptions): OverlayRenderContext;
+  buildContext(targetToken: Token, overlayDefinition: OverlayDefinition, options: TOptions): OverlayRenderContext;
 }

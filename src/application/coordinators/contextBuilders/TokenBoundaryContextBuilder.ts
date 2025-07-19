@@ -1,6 +1,7 @@
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
 import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
+import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
 interface TokenBoundaryContextOptions {
   isGM?: boolean;
@@ -13,12 +14,16 @@ interface TokenBoundaryContextOptions {
 export class TokenBoundaryContextBuilder implements OverlayContextBuilder<TokenBoundaryContextOptions> {
   buildContext(
     token: Token,
+    overlayDefinition: OverlayDefinition,
     options: TokenBoundaryContextOptions
   ): OverlayRenderContext {
 
     return {
       overlayTypeId: 'token-boundary',
-      renderTarget: 'world',
+      renderLayer: overlayDefinition.renderLayer,
+      renderOnTokenMesh: overlayDefinition.renderOnTokenMesh,
+      zIndex: overlayDefinition.zIndex,
+      ...(overlayDefinition.styling && { styling: overlayDefinition.styling }),
       overlayCentre: {
         x: token.centre.x,
         y: token.centre.y

@@ -7,7 +7,9 @@ export const TokenBoundaryDefinition: OverlayDefinition = {
   category: 'visual',
   enabledByDefault: true,
   visibleOnStart: false,
-  renderTarget: 'world',
+  renderLayer: 'token',
+  renderOnTokenMesh: false,
+  zIndex: 190,
 
   permissions: {
     requireLOS: true,

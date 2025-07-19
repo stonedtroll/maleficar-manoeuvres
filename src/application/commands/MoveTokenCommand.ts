@@ -111,7 +111,7 @@ export class MoveTokenCommand implements Command<MoveResult> {
             // Exclude hidden or invisible tokens
             if (obstacle instanceof Token) {
                 const token = obstacle as Token;
-                if (token.hidden || !token.visible) {
+                if (token.hidden) {
                     return false;
                 }
             }

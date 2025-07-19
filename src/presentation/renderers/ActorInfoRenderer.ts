@@ -6,7 +6,7 @@ import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4
 
 export class ActorInfoRenderer {
   private readonly logger: FoundryLogger;
-  private readonly textStyle: Partial<PIXI.ITextStyle>;
+  private readonly defaultTextStyle: Partial<PIXI.ITextStyle>;
   private readonly backgroundPadding: number = 8;
   private readonly lineSpacing: number = 0.25;
 
@@ -14,16 +14,16 @@ export class ActorInfoRenderer {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.ActorInfoRenderer`);
 
     // High-quality default text style for crisp rendering
-    this.textStyle = {
-      fontFamily: 'Arial, sans-serif',
+    this.defaultTextStyle = {
+      fontFamily: 'Roboto Condensed',
       fontSize: 14,
+      fontWeight: '400',
       fill: 0xFFFFFF,
       align: 'left',
     };
   }
 
   render(graphics: PIXI.Graphics, context: OverlayRenderContext): void {
-
     graphics.clear();
     graphics.removeChildren();
 
@@ -39,10 +39,19 @@ export class ActorInfoRenderer {
       return;
     }
 
+    // Get styling from context or use defaults
+    const speedsStyle = context.styling?.speeds || {
+      font: 'Roboto Condensed',
+      fontSize: 8,
+      fontColour: '#D4C8B8',
+      fontWeight: '400',
+      fontOpacity: 1
+    };
+
     this.logger.debug('Rendering actor info', {
       speedCount: speeds.length,
-      context: context,
-      graphics: graphics
+      styling: speedsStyle,
+      context: context
     });
 
     const speedContainers: PIXI.Container[] = [];
@@ -53,7 +62,8 @@ export class ActorInfoRenderer {
     speeds.forEach((speed, index) => {
       const container = new PIXI.Container();
       
-      const style = this.buildTextStyle(speed);
+      // Build text style using context styling
+      const style = this.buildTextStyle(speedsStyle);
       const text = new PIXI.Text(speed.label, style);
 
       text.resolution = window.devicePixelRatio * 2;
@@ -62,25 +72,17 @@ export class ActorInfoRenderer {
       text.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
       text.texture.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
 
-      if (speed.fontOpacity !== undefined) {
-        text.alpha = speed.fontOpacity;
-      }
-
-      this.logger.debug('Rendering speed text', {
-        label: speed.label,
-        font: speed.font,
-        fontSize: speed.fontSize,
-        fontColour: speed.fontColour,
-        fontOpacity: speed.fontOpacity,
-        icon: speed.icon
-      });
+      // Apply opacity from styling
+      text.alpha = speedsStyle.fontOpacity;
       text.anchor.set(0, 0.5); // Centre vertically
 
       if (speed.icon) {
         const iconTexture = PIXI.Texture.from(speed.icon);
         const iconSprite = new PIXI.Sprite(iconTexture);
         
-        iconSprite.tint = this.transformColour(speed.fontColour);
+        // Use the same colour as text for icon tint
+        iconSprite.tint = this.transformColour(speedsStyle.fontColour);
+        iconSprite.alpha = speedsStyle.fontOpacity;
 
         iconSprite.width = iconSize;
         iconSprite.height = iconSize;
@@ -90,10 +92,6 @@ export class ActorInfoRenderer {
         text.position.x = iconSize + iconTextSpacing;
         
         container.addChild(iconSprite);
-
-        if (speed.fontOpacity !== undefined) {
-          iconSprite.alpha = speed.fontOpacity;
-        }
       } else {
         text.position.x = 0;
       }
@@ -159,8 +157,8 @@ export class ActorInfoRenderer {
    * Calculate total height needed for all text elements.
    * Uses line height for consistent spacing.
    */
-  private calculateTotalHeight(speedCount: number): number {
-    const lineHeight = this.textStyle.fontSize as number || 14;
+  private calculateTotalHeight(speedCount: number, fontSize: number): number {
+    const lineHeight = fontSize;
     const totalSpacing = (speedCount - 1) * this.lineSpacing;
     return (lineHeight * speedCount * 1.2) + totalSpacing;
   }
@@ -178,22 +176,28 @@ export class ActorInfoRenderer {
     return 0xFFFFFF; // Default white for text
   }
 
-  private buildTextStyle(speed: any): PIXI.TextStyle {
+  /**
+   * Build text style from context styling configuration
+   */
+  private buildTextStyle(speedsStyle: {
+    font: string;
+    fontSize: number;
+    fontColour: string;
+    fontWeight: string;
+    fontOpacity: number;
+  }): PIXI.TextStyle {
+    
+    // Cast fontWeight to TextStyleFontWeight type
+    const fontWeight = speedsStyle.fontWeight as PIXI.TextStyleFontWeight;
+    
+    const styleConfig: Partial<PIXI.ITextStyle> = {
+      fontFamily: speedsStyle.font,
+      fontSize: speedsStyle.fontSize,
+      fontWeight: fontWeight,
+      fill: this.transformColour(speedsStyle.fontColour),
+      align: 'left'
+    };
 
-    const baseStyle = { ...this.textStyle };
-
-    const styleConfig = Object.entries({
-      ...baseStyle,
-      fontFamily: speed.font || baseStyle.fontFamily,
-      fontSize: speed.fontSize ?? baseStyle.fontSize,
-      fill: speed.fontColour ? this.transformColour(speed.fontColour) : baseStyle.fill
-    }).reduce((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as Record<string, any>);
-
-    return new PIXI.TextStyle(styleConfig as Partial<PIXI.ITextStyle>);
+    return new PIXI.TextStyle(styleConfig);
   }
 }
