@@ -29,6 +29,8 @@ To follow the module’s development, you can read the series here: https://hash
 - **Token Boundaries**: Visual representation of token collision boundaries.
 - **Obstacle Indicator**: While dragging, highlight the first token that would obstruct movement in real time.
 - **Actor Info**: Displays each actor’s movement speed, providing at‑a‑glance speed information during play.
+    - Supported: D&D 5E
+    - Future Support: Additional game systems will be added based on community interest.
   
 <p align=center>
     <img width="256" height="256" alt="obstacle-indicator" src="https://github.com/user-attachments/assets/da71d0d1-5990-4387-b5f1-94e840ca3a4f" />
@@ -44,6 +46,13 @@ To follow the module’s development, you can read the series here: https://hash
 - Enhances token vision detection and assists in identifying which tokens should display an overlay: https://github.com/dev7355608/vision-5e
 
 ## Attribution
+<ul>
+    <li><a href="https://www.flaticon.com/free-icons/movement" title="movement icons">Movement icons created by Bogdan Rosu - Flaticon</a></li>
+    <li><a href="https://www.flaticon.com/free-icons/eagle" title="eagle icons">Eagle icons created by Puckung - Flaticon</a></li>
+    <li><a href="https://www.flaticon.com/free-icons/swimming-pool" title="swimming pool icons">Swimming pool icons created by RA_IC0N21 - Flaticon</a></li>
+    <li><a href="https://www.flaticon.com/free-icons/climbing" title="climbing icons">Climbing icons created by Freepik - Flaticon</a></li>
+    <li><a href="https://www.flaticon.com/free-icons/dig" title="dig icons">Dig icons created by Leremy - Flaticon</a></li>
+</ul>
 
 <p align=right>
     <img alt="GitHub Downloads (specific asset, all releases)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/module.zip?style=for-the-badge&labelColor=2A2D34&color=8C2E2E">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img alt="GitHub Downloads (specific asset, latest release)" src="https://img.shields.io/github/downloads/stonedtroll/maleficar-manoeuvres/latest/module.zip?style=for-the-badge&labelColor=2A2D34&color=D97D26">
