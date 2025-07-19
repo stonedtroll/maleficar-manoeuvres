@@ -11,7 +11,7 @@ To follow the module’s development, you can read the series here: https://hash
 - Only compatible with gridless scenes.
 - Limited testing performed.
 - Slightly over-engineered.
-- Cartful of technical debt.
+- Cartful of technical debt. Features > technical debt repayment
 
 ## Features
 
