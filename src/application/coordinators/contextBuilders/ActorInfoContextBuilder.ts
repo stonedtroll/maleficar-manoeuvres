@@ -24,7 +24,6 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
       actor.id === targetToken.actorId
     );
 
-    // Get speeds from matching actor or use defaults
     const speeds = matchingActor
       ? matchingActor.speeds
         .filter(speed => speed.rate > 0)
@@ -56,7 +55,8 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
           x: targetToken.centre.x,
           y: targetToken.centre.y
         },
-        radius: targetToken.radius
+        radius: targetToken.radius,
+        currentMovementMode: targetToken.currentMovementMode
       },
       actorInfo: {
         speeds: speeds,

@@ -62,7 +62,7 @@ export interface OverlayDefinition {
   displayOn: GridTypeSupport;
   triggers: OverlayTriggers;
   updateOn: UpdateTriggers;
-  
+
   styling?: {
     [key: string]: {
       font: string;
@@ -70,6 +70,8 @@ export interface OverlayDefinition {
       fontColour: string;
       fontWeight: string;
       fontOpacity: number;
+      backgroundColour?: string;
+      backgroundOpacity?: number;
     };
   };
 }

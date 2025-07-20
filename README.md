@@ -29,6 +29,7 @@ To follow the module’s development, you can read the series here: https://hash
 - **Token Boundaries**: Visual representation of token collision boundaries.
 - **Obstacle Indicator**: While dragging, highlight the first token that would obstruct movement in real time.
 - **Actor Info**: Displays each actor’s movement speed, providing at‑a‑glance speed information during play.
+    - Highlight label indicating active movement mode
     - Supported: D&D 5E
     - Future Support: Additional game systems will be added based on community interest.
   

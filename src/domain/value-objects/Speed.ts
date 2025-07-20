@@ -88,9 +88,7 @@ export class Speed {
         return this._hash === other._hash;
     }
 
-    toString(): string {
-        const capitalisedMode = this._mode.charAt(0).toUpperCase() + this._mode.slice(1).toLowerCase();
-        
-        return `${this._rate} ${this._unit} (${capitalisedMode})`;
+    toString(): string {     
+        return `${this._rate} ${this._unit} ${this.mode}`;
     }
 }

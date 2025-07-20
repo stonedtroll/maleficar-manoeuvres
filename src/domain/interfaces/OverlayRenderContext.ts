@@ -4,6 +4,8 @@
  * data needed for dynamic overlay visualisation.
  */
 
+import { MovementTypes } from "../value-objects/Speed";
+
 /**
  * Token information for overlay rendering.
  */
@@ -17,6 +19,7 @@ interface TokenInfo {
   width: number;
   height: number;
   radius: number;
+  currentMovementMode?: MovementTypes | null;
 }
 
 /**
@@ -134,6 +137,8 @@ export interface OverlayRenderContext {
       fontColour: string;
       fontWeight: string;
       fontOpacity: number;
+      backgroundColour?: string;
+      backgroundOpacity?: number;
     };
   };
   actorInfo?: actorInfoContext;

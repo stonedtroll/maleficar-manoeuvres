@@ -18,9 +18,18 @@ export const ActorInfoDefinition: OverlayDefinition = {
       fontColour: '#D4C8B8',
       fontWeight: '400',
       fontOpacity: 1
+    },
+    currentMovementMode: {
+      font: 'Roboto Condensed',
+      fontSize: 8,
+      fontColour: '#D4C8B8',
+      fontOpacity: 1,
+      fontWeight: '500',
+      backgroundColour: '#4B5738',
+      backgroundOpacity: 0.6
     }
   },
-  
+
   permissions: {
     requireLOS: false,
     requireGM: false,

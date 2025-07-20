@@ -8,8 +8,8 @@ import { VerticalExtent } from '../value-objects/VerticalExtent.js';
 import { AABB } from '../value-objects/AABB.js';
 import { Rotation } from '../value-objects/Rotation.js';
 import { DISPOSITION } from '../constants/TokenDisposition.js';
-
 import { SpatialEntity } from '../interfaces/SpatialEntity';
+import { MovementTypes } from '../value-objects/Speed.js';
 
 export class Token implements SpatialEntity {
 
@@ -147,6 +147,10 @@ export class Token implements SpatialEntity {
         return this._tokenAdapter.disposition;
     }
 
+    get currentMovementMode(): MovementTypes | null {
+        return this._tokenAdapter.currentMovementMode as MovementTypes | null;
+    }
+
     get isControlledByCurrentUser(): boolean {
         return this._tokenAdapter.isControlledByCurrentUser;
     }
@@ -166,6 +170,11 @@ export class Token implements SpatialEntity {
         // Tokens with matching dispositions can pass through each other
         if (this._tokenAdapter.disposition === obstacleDisposition) {
             return true;
+        }
+
+        if (this._tokenAdapter.disposition === DISPOSITION.SECRET ||
+            obstacleDisposition === DISPOSITION.SECRET) {
+            return false;
         }
 
         // Neutral tokens have special pass-through rules
