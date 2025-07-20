@@ -115,7 +115,7 @@ type RenderPriority = 'low' | 'normal' | 'high';
 /**
  * Render target types.
  */
-export type RenderLayer = 'primary' | 'token' | 'drawings';
+export type RenderLayer = 'primary' | 'tokens' | 'drawings';
 
 /**
  * Context data passed to overlay render functions.

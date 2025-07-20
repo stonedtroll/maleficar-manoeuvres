@@ -186,12 +186,13 @@ export class OverlayRenderingService implements InitialisableService {
    */
   private getUniqueRenderLayers(): Set<string> {
     const layers = new Set<string>();
-    
-    // Always include tokens layer as default
+
+    // Always include drawings layer as default
+    layers.add('drawings');
     layers.add('tokens');
     
     for (const overlay of this.overlayRegistry.getAll()) {
-      const layer = overlay.renderLayer || 'tokens';
+      const layer = overlay.renderLayer || 'drawings';
       layers.add(layer);
     }
     

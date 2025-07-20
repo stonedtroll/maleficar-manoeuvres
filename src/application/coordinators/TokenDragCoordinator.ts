@@ -101,8 +101,17 @@ export class TokenDragCoordinator {
       const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
       const dragStartToken = new Token(event.dragStartTokenAdaptor);
       const previewToken = new Token(event.previewTokenAdapter);
+      const ownedByCurrentUserActors = event.ownedByCurrentUserActorAdapters.map(adapter => new Actor(adapter));
 
       await this.updateObstacleIndicatorOverlays(allTokens, dragStartToken, previewToken, event.user.isGM, event.user.colour);
+      await this.updateOverlays(
+        allTokens,
+        previewToken,
+        ownedByCurrentUserActors,
+        event.user.isGM,
+        event.user.colour,
+        'tokenDragMove'
+      );
 
     } catch (error) {
       this.logger.error('Error in handleDragMove', {
