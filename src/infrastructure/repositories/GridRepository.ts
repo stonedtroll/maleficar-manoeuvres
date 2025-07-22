@@ -1,6 +1,6 @@
 import { MODULE_ID } from '../../config.js';
 import { GridAdapter } from '../adapters/GridAdapter.js';
-
+import { Grid } from '../../domain/value-objects/Grid.js';
 
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 

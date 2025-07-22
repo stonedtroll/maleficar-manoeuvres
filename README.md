@@ -37,7 +37,7 @@ To follow the module’s development, you can read the series here: https://hash
     - Highlight label indicating active movement mode
     - Supported: D&D 5E
     - Future Support: Additional game systems will be added based on community interest.
-- **Rangefinder**: Show the distance between selected tokens and other tokens on the canvas, updating dynamically to help players gauge movement and spell ranges
+- **Rangefinder**: Dynamically display 3D, edge‑to‑edge distances using spatial volume between selected tokens and other tokens on the canvas, updating in real time to help players gauge movement, weapon and spell ranges.
   
 When a token is being dragged, its boundary and actor information are attached to the preview token.
 
