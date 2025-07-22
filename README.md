@@ -37,6 +37,7 @@ To follow the module’s development, you can read the series here: https://hash
     - Highlight label indicating active movement mode
     - Supported: D&D 5E
     - Future Support: Additional game systems will be added based on community interest.
+- **Rangefinder**: Show the distance between selected tokens and other tokens on the canvas, updating dynamically to help players gauge movement and spell ranges
   
 When a token is being dragged, its boundary and actor information are attached to the preview token.
 
@@ -56,6 +57,7 @@ When a token is being dragged, its boundary and actor information are attached t
     <li><a href="https://www.flaticon.com/free-icons/swimming-pool" title="swimming pool icons">Swimming pool icons created by RA_IC0N21 - Flaticon</a></li>
     <li><a href="https://www.flaticon.com/free-icons/climbing" title="climbing icons">Climbing icons created by Freepik - Flaticon</a></li>
     <li><a href="https://www.flaticon.com/free-icons/dig" title="dig icons">Dig icons created by Leremy - Flaticon</a></li>
+    <li><a href="https://www.flaticon.com/free-icons/road" title="road icons">Road icons created by Pixel perfect - Flaticon</a></li>
 </ul>
 
 <p align=right>

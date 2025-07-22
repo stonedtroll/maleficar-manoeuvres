@@ -1,8 +1,10 @@
 import { Vector2 } from "../../domain/value-objects/Vector2.js";
 import { Rotation } from "../../domain/value-objects/Rotation.js";
 import { AbstractTokenAdapter } from "../../application/adapters/AbstractTokenAdapter.js";
+import { MovementTypes } from "../../domain/value-objects/Speed.js";
+
 import { DISPOSITION, type DispositionValue } from "../../domain/constants/TokenDisposition.js";
-import { MovementTypes } from "@/domain/value-objects/Speed.js";
+
 
 export class TokenAdapter extends AbstractTokenAdapter {
 
@@ -40,7 +42,7 @@ export class TokenAdapter extends AbstractTokenAdapter {
 
     get disposition(): DispositionValue {
         switch (this.token.document.disposition) {
-            case -2: return DISPOSITION.SECRET; 
+            case -2: return DISPOSITION.SECRET;
             case -1: return DISPOSITION.HOSTILE;
             case 0: return DISPOSITION.NEUTRAL;
             case 1: return DISPOSITION.FRIENDLY;

@@ -16,6 +16,7 @@ import { TokenBoundaryContextBuilder } from '../coordinators/contextBuilders/Tok
 import { FacingArcContextBuilder } from '../coordinators/contextBuilders/FacingArcContextBuilder.js';
 import { ObstacleIndicatorContextBuilder } from '../coordinators/contextBuilders/ObstacleIndicatorContextBuilder.js';
 import { ActorInfoContextBuilder } from '../coordinators/contextBuilders/ActorInfoContextBuilder.js';
+import { TokenInfoContextBuilder } from '../coordinators/contextBuilders/TokenInfoContextBuilder.js';
 
 export class OverlayContextBuilderRegistry {
     private readonly logger: FoundryLogger;
@@ -172,6 +173,9 @@ export class OverlayContextBuilderRegistry {
         
         // Register actor information builder
         this.register('actor-info', new ActorInfoContextBuilder());
+
+        // Register token information builder
+        this.register('token-info', new TokenInfoContextBuilder());
 
         this.logger.info(`Default context builders registered: ${this.builders.size}`);
     }

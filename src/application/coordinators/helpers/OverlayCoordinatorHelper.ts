@@ -15,6 +15,7 @@ import type { Actor } from '../../../domain/entities/Actor.js';
 import { Token } from '../../../domain/entities/Token.js';
 import { LoggerFactory } from '../../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../../config.js';
+import { RangeFinderService } from '../../../domain/services/RangeFinderService.js';
 
 export class OverlayCoordinatorHelper {
     private readonly logger: FoundryLogger;
@@ -64,6 +65,13 @@ export class OverlayCoordinatorHelper {
                 contextBuilderRegistry
             );
 
+            let sourceToken: Token | undefined;
+            if (previewToken) {
+                sourceToken = previewToken;
+            } else {
+                sourceToken = allTokens.find(token => token.isControlledByCurrentUser);
+            }
+
             await this.requestOverlayRendering(
                 targetTokens,
                 preparedOverlays,
@@ -76,6 +84,7 @@ export class OverlayCoordinatorHelper {
                         userColour,
                         preparedOverlays,
                         contextBuilderRegistry,
+                        sourceToken,
                         actors
                     )
             );
@@ -230,14 +239,15 @@ export class OverlayCoordinatorHelper {
         userColour: string,
         overlaysWithBuilders: OverlayDefinition[],
         contextBuilderRegistry: OverlayContextBuilderRegistry,
+        sourceToken?: Token,
         actors?: Actor[]
     ): OverlayRenderContext {
         const overlay = overlaysWithBuilders.find(o => o.id === overlayId);
-        
+
         if (!overlay) {
             throw new Error(`Overlay definition not found for ${overlayId}`);
         }
-        
+
         const contextBuilder = overlay.contextBuilder ||
             this.getContextBuilder(overlay, contextBuilderRegistry);
 
@@ -249,6 +259,8 @@ export class OverlayCoordinatorHelper {
             overlayId,
             isGM,
             userColour,
+            targetToken,
+            sourceToken,
             actors
         );
 
@@ -360,7 +372,7 @@ export class OverlayCoordinatorHelper {
                 break;
 
             case 'non-controlled':
-                filteredTokens = allTokens.filter(token => !token.isControlledByCurrentUser);
+                filteredTokens = allTokens.filter(token => token.visible && !token.hidden && !token.isControlledByCurrentUser);
                 break;
 
             case 'preview':
@@ -448,6 +460,8 @@ export class OverlayCoordinatorHelper {
         overlayId: string,
         isGM: boolean,
         userColour: string,
+        targetToken: Token,
+        sourceToken?: Token,
         actors?: Actor[]
     ): any {  // Using 'any' since different overlays have different option types
         switch (overlayId) {
@@ -457,7 +471,21 @@ export class OverlayCoordinatorHelper {
                     userColour,
                     ownedByCurrentUserActors: actors ?? []
                 };
+            case 'token-info':
 
+                if (!sourceToken) {
+                    this.logger.warn('No controlled token found for token-info overlay');
+                    return { isGM, userColour };
+                }
+
+                const rangeResult = new RangeFinderService().distanceTo(sourceToken, targetToken);
+
+                return {
+                    isGM,
+                    userColour,
+                    range: rangeResult.distance,
+                    rangeUnit: rangeResult.unit,
+                };
             default:
                 // Return generic options for overlays that don't have specific requirements
                 return {

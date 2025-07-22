@@ -15,6 +15,7 @@ import { ObstacleIndicatorRenderer } from '../renderers/ObstacleIndicatorRendere
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import { ActorInfoRenderer } from '../renderers/ActorInfoRenderer.js';
+import { TokenInfoRenderer } from '../renderers/TokenInfoRenderer.js';
 
 export class OverlayRenderingService implements InitialisableService {
   private readonly logger: FoundryLogger;
@@ -154,6 +155,7 @@ export class OverlayRenderingService implements InitialisableService {
     this.renderers.set('token-boundary', new TokenBoundaryRenderer());
     this.renderers.set('obstacle-indicator', new ObstacleIndicatorRenderer());
     this.renderers.set('actor-info', new ActorInfoRenderer());
+    this.renderers.set('token-info', new TokenInfoRenderer());
 
     this.logger.debug('Initialised overlay renderers', {
       renderers: Array.from(this.renderers.keys())

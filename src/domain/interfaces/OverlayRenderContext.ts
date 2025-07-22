@@ -94,6 +94,12 @@ interface actorInfoContext {
   weaponRange: number;
 }
 
+interface tokenInfoContext {
+
+  rangeIcon: string;
+  range: string | null;
+}
+
 interface SpeedContext {
 
   icon: string;
@@ -142,6 +148,7 @@ export interface OverlayRenderContext {
     };
   };
   actorInfo?: actorInfoContext;
+  tokenInfo?: tokenInfoContext;
   rotation?: RotationContext;
   boundary?: BoundaryContext;
   obstacle?: ObstacleContext;

@@ -14,6 +14,7 @@ import { TokenBoundaryDefinition } from '../infrastructure/overlays/definitions/
 import { FacingArcDefinition } from '../infrastructure/overlays/definitions/FacingArcDefinition.js';
 import { ObstacleIndicatorDefinition } from '../infrastructure/overlays/definitions/ObstacleIndicatorDefinition.js';
 import { ActorInfoDefinition } from '../infrastructure/overlays/definitions/ActorInfoDefinition.js';
+import { TokenInfoDefinition } from '../infrastructure/overlays/definitions/TokenInfoDefinition.js';
 
 export class ManoeuvreApplication {
   private readonly logger: FoundryLogger;
@@ -102,7 +103,8 @@ export class ManoeuvreApplication {
       TokenBoundaryDefinition,
       FacingArcDefinition,
       ObstacleIndicatorDefinition,
-      ActorInfoDefinition
+      ActorInfoDefinition,
+      TokenInfoDefinition
     ];
 
     let successCount = 0;

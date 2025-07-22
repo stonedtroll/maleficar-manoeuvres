@@ -56,7 +56,7 @@ export class Token implements SpatialEntity {
                 this.elevation + 0.5
             ),
             radius: this.radius,
-            height: this.height,
+            height: 1,
             axis: 'z' // Always vertical
         };
     }

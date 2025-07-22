@@ -1,15 +1,6 @@
 /**
  * 
- * Manages token drag operations and coordinates drag-triggered overlay rendering. This service tracks individual
- * token drag states and ensures appropriate overlays are displayed during drag
- * operations, providing visual feedback for movement and positioning.
- * 
- * Features:
- * - Tracks individual token drag states with position history
- * - Manages drag-triggered overlay display in real-time
- * - Handles drag cancellation with proper cleanup
- * - Coordinates with permission system for overlay visibility
- * - Optimised for performance with early returns and efficient state checks
+ * Manages token drag operations and coordinates drag-triggered overlay rendering. 
  */
 
 import type { EventBus } from '../../infrastructure/events/EventBus.js';
@@ -155,7 +146,7 @@ export class TokenDragCoordinator {
 
   private filterObstacles(obstacles: SpatialEntity[], movingTokenId?: string): SpatialEntity[] {
     return obstacles.filter(obstacle => {
-      // Exclude the moving token itself
+
       if (movingTokenId && obstacle.id === movingTokenId) {
         return false;
       }
@@ -163,17 +154,14 @@ export class TokenDragCoordinator {
       const isHidden = (obstacle as any).hidden;
       const isVisible = (obstacle as any).visible;
 
-      // If it has a hidden property and it's true, exclude it
       if (isHidden === true) {
         return false;
       }
 
-      // If it has a visible property and it's false, exclude it
       if (isVisible === false) {
         return false;
       }
 
-      // Default to visible
       return true;
     });
   }
@@ -361,35 +349,8 @@ export class TokenDragCoordinator {
   private async cleanupDragOperation(): Promise<void> {
 
     this.clearObstacleIndicatorOverlays();
-
     this.hideAllDragOverlays();
   }
-
-  /**
-   * Hides all drag-triggered overlays.
-   */
-  // private async hideAllDragOverlays(): Promise<void> {
-  //   try {
-  //     const dragOverlays = this.overlayRegistry.getAll()
-  //       .filter(overlay => overlay.triggers?.tokenDrag === true);
-
-  //     if (dragOverlays.length === 0) {
-  //       return;
-  //     }
-
-  //     this.logger.debug('Hiding all drag overlays', {
-  //       dragOverlayCount: dragOverlays.length
-  //     });
-
-  //     for (const overlay of dragOverlays) {
-  //       this.overlayRenderer.hideAllOverlaysOfType(overlay.id);
-  //     }
-  //   } catch (error) {
-  //     this.logger.error('Error hiding drag overlays', {
-  //       error: error instanceof Error ? error.message : String(error)
-  //     });
-  //   }
-  // }
 
   /**
  * Tracks drag overlays for efficient cleanup when key is released.
