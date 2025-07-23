@@ -72,6 +72,9 @@ export interface OverlayDefinition {
       fontOpacity: number;
       backgroundColour?: string;
       backgroundOpacity?: number;
+      iconShape?: string; 
+      iconSize?: number; 
+      iconBorderColour?: string; 
     };
   };
 }

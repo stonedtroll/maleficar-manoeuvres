@@ -27,6 +27,25 @@ export const ActorInfoDefinition: OverlayDefinition = {
       fontWeight: '500',
       backgroundColour: '#4B5738',
       backgroundOpacity: 0.6
+    },
+    weaponRanges: {
+      font: 'Roboto Condensed',
+      fontSize: 8,
+      fontColour: '#D4C8B8',
+      fontWeight: '400',
+      fontOpacity: 1,
+      iconShape: 'circle',
+      iconSize: 9,
+      iconBorderColour: '#B89A67'
+    },
+    effectiveRange: {
+      font: 'Roboto Condensed',
+      fontSize: 8,
+      fontColour: '#D4C8B8',
+      fontWeight: '400',
+      fontOpacity: 1,
+      backgroundColour: '#5D1313',
+      backgroundOpacity: 0.6
     }
   },
 

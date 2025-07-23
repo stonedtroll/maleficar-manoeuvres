@@ -1,3 +1,7 @@
+/**
+ * Context builder for actor information overlays.
+ */
+
 import type { OverlayContextBuilder } from '../../../domain/interfaces/OverlayContextBuilder.js';
 import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
@@ -10,9 +14,6 @@ interface ActorInfoContextOptions {
   ownedByCurrentUserActors: Actor[];
 }
 
-/**
- * Context builder for actor information overlays.
- */
 export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoContextOptions> {
   buildContext(
     targetToken: Token,
@@ -31,6 +32,38 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
           label: speed.toString(),
           icon: speed.icon,
         })) : [];
+
+    const weaponRanges = matchingActor
+      ? matchingActor.equippedWeapons
+        .filter(weapon => weapon.isEquipped && weapon.range)
+        .map(weapon => {
+          const range = weapon.range!;
+          const units = range.units || 'tbd';
+          
+          // Calculate effective range values
+          const hasEffective = range.effective?.min !== undefined && range.effective?.max !== undefined;
+          const effectiveMin = hasEffective ? range.effective!.min : (range.minimum ?? 0);
+          const effectiveMax = hasEffective ? range.effective!.max : (range.maximum ?? 0);
+          
+          // Check if effective range equals min/max range
+          const effectiveMatchesMinMax = 
+            effectiveMin === (range.minimum ?? 0) && 
+            effectiveMax === (range.maximum ?? 0);
+          
+          return {
+            name: weapon.name,
+            icon: weapon.image,
+            effectiveRange: `${effectiveMin}\u200A–\u200A${effectiveMax} ${units}`,
+            minimumRange: `${range.minimum ?? 0}`,
+            maximumRange: `${range.maximum ?? 0}`,
+            // Set range to null if effective range matches min/max
+            range: effectiveMatchesMinMax 
+              ? null 
+              : `${range.minimum ?? 0}\u200A–\u200A${range.maximum ?? 0} ${units}`,
+            units: units
+          };
+        })
+      : [];
 
     return {
       overlayTypeId: 'actor-info',
@@ -60,7 +93,7 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
       },
       actorInfo: {
         speeds: speeds,
-        weaponRange: 0
+        weaponRanges: weaponRanges
       },
       user: {
         isGM: options.isGM ?? false,

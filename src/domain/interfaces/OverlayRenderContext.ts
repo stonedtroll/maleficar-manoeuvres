@@ -88,13 +88,13 @@ interface VisibilityContext {
   isVisible: boolean;
 }
 
-interface actorInfoContext {
+interface ActorInfoContext {
 
   speeds: SpeedContext[];
-  weaponRange: number;
+  weaponRanges: WeaponRangeContext[];
 }
 
-interface tokenInfoContext {
+interface TokenInfoContext {
 
   rangeIcon: string;
   range: string | null;
@@ -104,6 +104,17 @@ interface SpeedContext {
 
   icon: string;
   label: string;
+}
+
+interface WeaponRangeContext {
+
+  name: string;
+  icon: string;
+  effectiveRange: string;
+  minimumRange: string;
+  maximumRange: string;
+  range: string | null; 
+  units: string;
 }
 
 interface UserInfo {
@@ -147,8 +158,8 @@ export interface OverlayRenderContext {
       backgroundOpacity?: number;
     };
   };
-  actorInfo?: actorInfoContext;
-  tokenInfo?: tokenInfoContext;
+  actorInfo?: ActorInfoContext;
+  tokenInfo?: TokenInfoContext;
   rotation?: RotationContext;
   boundary?: BoundaryContext;
   obstacle?: ObstacleContext;

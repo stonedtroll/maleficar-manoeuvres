@@ -1,6 +1,7 @@
 import type { AbstractActorAdapter } from '../../application/adapters/AbstractActorAdapter.js';
 
 import { MovementTypes, Speed } from '../value-objects/Speed.js';
+import { Weapon } from '../value-objects/Weapon.js';
 
 export class Actor {
     private readonly _actorAdapter: AbstractActorAdapter;
@@ -19,6 +20,10 @@ export class Actor {
         return this._actorAdapter.speeds;
     }
 
+    get equippedWeapons(): ReadonlyArray<Weapon> {
+        return this._actorAdapter.fetchEquippedWeapons();
+    }
+    
     hasMovementMode(mode: MovementTypes): boolean {
         return this._actorAdapter.speeds.some(s => s.mode === mode);
     }
