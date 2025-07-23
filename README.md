@@ -38,8 +38,13 @@ To follow the module’s development, you can read the series here: https://hash
     - Displays the effective and total range of the actor’s currently equipped weapon.
         - The effective range is highlighted in crimson for quick recognition.
         - If the effective and total ranges are identical, only the effective range is shown.
-    - Supported: D&D 5E
-    - Future Support: Additional game systems will be added based on community interest.
+        - Supported: D&D 5E
+        - Future Support: Additional game systems will be added based on community interest.
+
+<p align=center>
+    <img width="512" height="256" alt="ranges" src="https://github.com/user-attachments/assets/cda09121-2e63-410f-b7ae-7c6dc1fc23ea" />
+</p>
+
 - **Rangefinder**: Dynamically display 3D, edge‑to‑edge distances using spatial volume between selected tokens and other tokens on the canvas, updating in real time to help players gauge movement, weapon and spell ranges.
 
 <p align=center>
