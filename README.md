@@ -40,19 +40,14 @@ To follow the module’s development, you can read the series here: https://hash
         - If the effective and total ranges are identical, only the effective range is shown.
         - Supported: D&D 5E
         - Future Support: Additional game systems will be added based on community interest.
-
-<p align=center>
-    <img width="512" height="256" alt="ranges" src="https://github.com/user-attachments/assets/cda09121-2e63-410f-b7ae-7c6dc1fc23ea" />
-</p>
-
 - **Rangefinder**: Dynamically display 3D, edge‑to‑edge distances using spatial volume between selected tokens and other tokens on the canvas, updating in real time to help players gauge movement, weapon and spell ranges.
     - Visually distinguishes when a token falls within the source token weapon’s effective range or overall range.
 
 <p align=center>
-    <img width="361" height="361" alt="rangeandmovement" src="https://github.com/user-attachments/assets/2d185153-67a8-42cf-9224-d06d156c53b0" />
+    <img width="1072" height="386" alt="Untitled" src="https://github.com/user-attachments/assets/fdf646e7-5d1d-41d5-8d9c-61a90f028c3e" />
 </p>
   
-When a token is being dragged, its boundary and actor information are attached to the preview token.
+When a token is being dragged, its boundary is attached to the preview token.
 
 ## Usage
 - Hold 'm' to display token boundaries and facing arcs.
