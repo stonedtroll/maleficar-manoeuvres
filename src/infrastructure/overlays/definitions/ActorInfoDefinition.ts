@@ -36,7 +36,9 @@ export const ActorInfoDefinition: OverlayDefinition = {
       fontOpacity: 1,
       iconShape: 'circle',
       iconSize: 9,
-      iconBorderColour: '#B89A67'
+      iconBorderColour: '#B89A67',
+      backgroundColour: '#134F5D',
+      backgroundOpacity: 0.6
     },
     effectiveRange: {
       font: 'Roboto Condensed',

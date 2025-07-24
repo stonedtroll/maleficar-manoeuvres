@@ -50,16 +50,26 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
             effectiveMin === (range.minimum ?? 0) && 
             effectiveMax === (range.maximum ?? 0);
           
+          // Format effective range - show only max if min equals max
+          const effectiveRangeText = effectiveMin === effectiveMax
+            ? `${effectiveMax} ${units}`
+            : `${effectiveMin}\u200A–\u200A${effectiveMax} ${units}`;
+          
+          // Format min/max range - show only max if min equals max
+          const minMaxRangeText = (range.minimum ?? 0) === (range.maximum ?? 0)
+            ? `${range.maximum ?? 0} ${units}`
+            : `${range.minimum ?? 0}\u200A–\u200A${range.maximum ?? 0} ${units}`;
+          
           return {
             name: weapon.name,
             icon: weapon.image,
-            effectiveRange: `${effectiveMin}\u200A–\u200A${effectiveMax} ${units}`,
+            effectiveRange: effectiveRangeText,
             minimumRange: `${range.minimum ?? 0}`,
             maximumRange: `${range.maximum ?? 0}`,
             // Set range to null if effective range matches min/max
             range: effectiveMatchesMinMax 
               ? null 
-              : `${range.minimum ?? 0}\u200A–\u200A${range.maximum ?? 0} ${units}`,
+              : minMaxRangeText,
             units: units
           };
         })

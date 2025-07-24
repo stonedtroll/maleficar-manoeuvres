@@ -10,6 +10,7 @@ interface TokenInfoContextOptions {
     userColour?: string;
     range?: number;
     rangeUnit?: string;
+    rangeBackgroundColour?: string;
 }
 
 /**
@@ -26,12 +27,28 @@ export class TokenInfoContextBuilder implements OverlayContextBuilder<TokenInfoC
             ? `${options.range.toFixed(1)} ${options.rangeUnit}`
             : null;
 
+        let styling = overlayDefinition.styling;
+        
+        if (overlayDefinition.styling?.range && options.rangeBackgroundColour !== undefined) {
+            // Create a new range object with all existing properties plus the background colour
+            const updatedRange = {
+                ...overlayDefinition.styling.range,
+                backgroundColour: options.rangeBackgroundColour,
+                backgroundOpacity: 0.6
+            };
+            
+            styling = {
+                ...overlayDefinition.styling,
+                range: updatedRange
+            };
+        }
+
         return {
             overlayTypeId: 'token-info',
             renderLayer: overlayDefinition.renderLayer,
             renderOnTokenMesh: overlayDefinition.renderOnTokenMesh,
             zIndex: overlayDefinition.zIndex,
-            ...(overlayDefinition.styling && { styling: overlayDefinition.styling }),
+            ...(styling && { styling }),
             overlayCentre: {
                 x: targetToken.centre.x,
                 y: targetToken.centre.y

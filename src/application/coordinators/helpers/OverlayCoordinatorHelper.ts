@@ -16,6 +16,7 @@ import { Token } from '../../../domain/entities/Token.js';
 import { LoggerFactory } from '../../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../../config.js';
 import { RangeFinderService } from '../../../domain/services/RangeFinderService.js';
+import { Weapon } from '../../../domain/value-objects/Weapon.js';
 
 export class OverlayCoordinatorHelper {
     private readonly logger: FoundryLogger;
@@ -464,6 +465,8 @@ export class OverlayCoordinatorHelper {
         sourceToken?: Token,
         actors?: Actor[]
     ): any {  // Using 'any' since different overlays have different option types
+
+
         switch (overlayId) {
             case 'actor-info':
                 return {
@@ -479,12 +482,28 @@ export class OverlayCoordinatorHelper {
                 }
 
                 const rangeResult = new RangeFinderService().distanceTo(sourceToken, targetToken);
+                const sourceActor = actors?.find(actor => actor.id === sourceToken.actorId);
+
+                // Determine font colour based on weapon ranges
+                const rangeBackgroundColour = this.determineBackgroundColourByRange(
+                    sourceActor?.equippedWeapons ?? [],
+                    rangeResult.distance
+                );
+
+                this.logger.debug('Calculated range for token-info overlay', {
+                    distance: rangeResult.distance,
+                    unit: rangeResult.unit,
+                    rangeBackgroundColour: rangeBackgroundColour,
+                    targetTokenName: targetToken.name,
+                    equippedWeapons: sourceActor?.equippedWeapons
+                });
 
                 return {
                     isGM,
                     userColour,
                     range: rangeResult.distance,
                     rangeUnit: rangeResult.unit,
+                    rangeBackgroundColour: rangeBackgroundColour
                 };
             default:
                 // Return generic options for overlays that don't have specific requirements
@@ -493,5 +512,33 @@ export class OverlayCoordinatorHelper {
                     userColour
                 };
         }
+    }
+
+    /**
+    * Determines the font colour based on weapon ranges and distance.
+    */
+    private determineBackgroundColourByRange(equippedWeapons: readonly Weapon[], distance: number): string | null{
+
+        if (equippedWeapons.length === 0) {
+            return null;
+        }
+
+        const inEffectiveRange = equippedWeapons.some(weapon =>
+            weapon.isWithinEffectiveRange(distance)
+        );
+
+        if (inEffectiveRange) {
+            return '#5D1313';
+        }
+
+        const inRange = equippedWeapons.some(weapon =>
+            weapon.isWithinRange(distance)
+        );
+
+        if (inRange) {
+            return '#134F5D'; 
+        }
+
+        return null; 
     }
 }

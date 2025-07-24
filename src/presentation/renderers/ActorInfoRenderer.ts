@@ -4,6 +4,7 @@ import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRender
 import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
+import { RenderingUtils } from '../utils/RenderingUtils.js';
 
 export class ActorInfoRenderer {
   private readonly logger: FoundryLogger;
@@ -14,8 +15,7 @@ export class ActorInfoRenderer {
   }
 
   render(graphics: PIXI.Graphics, context: OverlayRenderContext): void {
-    graphics.clear();
-    graphics.removeChildren();
+    RenderingUtils.prepareGraphics(graphics);
 
     if (!context.actorInfo) {
       this.logger.debug('No actor info provided in context');
@@ -99,7 +99,7 @@ export class ActorInfoRenderer {
     const backgroundPadding = { x: 1, y: 0 }; // Padding for highlight background
     const categorySpacing = 6; // Space between speed and weapon categories
 
-    // Process speeds (existing code)
+    // Process speeds
     speeds?.forEach((speed, index) => {
       const container = new PIXI.Container();
 
@@ -119,38 +119,28 @@ export class ActorInfoRenderer {
         currentMovementMode?.toLowerCase().includes(speed.label.toLowerCase());
 
       // Build text style using context styling
-      const style = this.buildTextStyle(isCurrentMode && currentModeStyle ? currentModeStyle : speedsStyle);
-      const text = new PIXI.Text(speed.label, style);
-
-      text.resolution = window.devicePixelRatio * 2;
-      text.updateText(true);
-
-      text.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
-      text.texture.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
-
-      // Apply opacity from styling
-      text.alpha = isCurrentMode && currentModeStyle ? currentModeStyle.fontOpacity : speedsStyle.fontOpacity;
+      const style = RenderingUtils.buildTextStyle(isCurrentMode && currentModeStyle ? currentModeStyle : speedsStyle);
+      const text = RenderingUtils.createOptimisedText(
+        speed.label, 
+        style, 
+        isCurrentMode && currentModeStyle ? currentModeStyle.fontOpacity : speedsStyle.fontOpacity
+      );
       text.anchor.set(0, 0.5); // Centre vertically
 
       // Position icon and text first to calculate proper dimensions
       let iconSprite: PIXI.Sprite | null = null;
 
       if (speed.icon) {
-        const iconTexture = PIXI.Texture.from(speed.icon);
-        iconSprite = new PIXI.Sprite(iconTexture);
-
         // Use the appropriate colour based on current mode
         const tintColour = isCurrentMode && currentModeStyle
           ? currentModeStyle.fontColour
           : speedsStyle.fontColour;
-        iconSprite.tint = this.transformColour(tintColour);
-        iconSprite.alpha = isCurrentMode && currentModeStyle
+        const alpha = isCurrentMode && currentModeStyle
           ? currentModeStyle.fontOpacity
           : speedsStyle.fontOpacity;
 
-        iconSprite.width = speedIconSize;
-        iconSprite.height = speedIconSize;
-        iconSprite.anchor.set(0, 0.5); // Centre vertically
+        iconSprite = RenderingUtils.createIconSprite(speed.icon, speedIconSize, tintColour, alpha);
+        iconSprite.anchor.set(0, 0.5); // Override default centre anchor
         iconSprite.position.x = 0;
 
         text.position.x = speedIconSize + iconTextSpacing;
@@ -173,7 +163,7 @@ export class ActorInfoRenderer {
         const bgHeight = contentHeight + (backgroundPadding.y * 2);
 
         // Use the actual background colour from styling
-        const bgColour = this.transformColour(currentModeStyle.backgroundColour || '#3E352A');
+        const bgColour = currentModeStyle.backgroundColour || '#3E352A';
         const bgOpacity = currentModeStyle.backgroundOpacity ?? 0.8;
 
         this.logger.debug('Drawing background for current mode', {
@@ -184,20 +174,21 @@ export class ActorInfoRenderer {
         });
 
         // Draw rectangle with actual colour
-        backgroundGraphics.beginFill(bgColour, bgOpacity);
-        backgroundGraphics.drawRect(
+        RenderingUtils.drawBackground(
+          backgroundGraphics,
           -backgroundPadding.x,
           -bgHeight / 2,
           bgWidth,
-          bgHeight
+          bgHeight,
+          bgColour,
+          bgOpacity
         );
-        backgroundGraphics.endFill();
 
         // Add background FIRST
         container.addChild(backgroundGraphics);
       }
 
-      // Add icon and text AFTER background (only if not already added)
+      // Add icon and text AFTER background
       if (iconSprite) {
         container.addChild(iconSprite);
       }
@@ -237,13 +228,8 @@ export class ActorInfoRenderer {
       const rangeContainer = new PIXI.Container();
       
       // Create weapon name text
-      const nameStyle = this.buildTextStyle(weaponRangesStyle);
-      const nameText = new PIXI.Text(weapon.name, nameStyle);
-      nameText.resolution = window.devicePixelRatio * 2;
-      nameText.updateText(true);
-      nameText.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
-      nameText.texture.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
-      nameText.alpha = weaponRangesStyle.fontOpacity;
+      const nameStyle = RenderingUtils.buildTextStyle(weaponRangesStyle);
+      const nameText = RenderingUtils.createOptimisedText(weapon.name, nameStyle, weaponRangesStyle.fontOpacity);
       nameText.anchor.set(0, 0.5);
       
       // Position icon and name
@@ -251,13 +237,12 @@ export class ActorInfoRenderer {
       if (weapon.icon) {
         iconContainer = new PIXI.Container();
         
-        const iconTexture = PIXI.Texture.from(weapon.icon);
-        const iconSprite = new PIXI.Sprite(iconTexture);
-        iconSprite.tint = this.transformColour(weaponRangesStyle.fontColour);
-        iconSprite.alpha = weaponRangesStyle.fontOpacity;
-        iconSprite.width = weaponIconSize;
-        iconSprite.height = weaponIconSize;
-        iconSprite.anchor.set(0.5);
+        const iconSprite = RenderingUtils.createIconSprite(
+          weapon.icon,
+          weaponIconSize,
+          weaponRangesStyle.fontColour,
+          weaponRangesStyle.fontOpacity
+        );
         iconSprite.position.set(weaponIconSize / 2, 0);
 
         // Create icon mask based on shape
@@ -285,7 +270,7 @@ export class ActorInfoRenderer {
           const border = new PIXI.Graphics();
           border.lineStyle(
             1, // Default border width
-            this.transformColour(iconBorderColour),
+            RenderingUtils.transformColour(iconBorderColour),
             1 // Full opacity
           );
           
@@ -307,19 +292,18 @@ export class ActorInfoRenderer {
       nameContainer.addChild(nameText);
       
       // Create range texts
-      const rangeStyle = this.buildTextStyle({
+      const rangeStyle = RenderingUtils.buildTextStyle({
         ...weaponRangesStyle
       });
       
       // Effective range with background
       const effectiveRangeContainer = new PIXI.Container();
-      const effectiveTextStyle = this.buildTextStyle(effectiveRangeStyle);
-      const effectiveText = new PIXI.Text(weapon.effectiveRange, effectiveTextStyle);
-      effectiveText.resolution = window.devicePixelRatio * 2;
-      effectiveText.updateText(true);
-      effectiveText.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
-      effectiveText.texture.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
-      effectiveText.alpha = effectiveRangeStyle.fontOpacity;
+      const effectiveTextStyle = RenderingUtils.buildTextStyle(effectiveRangeStyle);
+      const effectiveText = RenderingUtils.createOptimisedText(
+        weapon.effectiveRange,
+        effectiveTextStyle,
+        effectiveRangeStyle.fontOpacity
+      );
       effectiveText.anchor.set(0, 0.5);
       
       // Draw background for effective range
@@ -328,46 +312,67 @@ export class ActorInfoRenderer {
       const effectiveBgWidth = effectiveText.width + effectivePadding.x;
       const effectiveBgHeight = effectiveText.height + effectivePadding.y;
       
-      effectiveBg.beginFill(
-        this.transformColour(effectiveRangeStyle.backgroundColour),
-        effectiveRangeStyle.backgroundOpacity
-      );
-      effectiveBg.drawRect(
+      RenderingUtils.drawBackground(
+        effectiveBg,
         -effectivePadding.x,
         -effectiveBgHeight / 2,
         effectiveBgWidth,
-        effectiveBgHeight
+        effectiveBgHeight,
+        effectiveRangeStyle.backgroundColour || '#5D1313', // Provide default colour
+        effectiveRangeStyle.backgroundOpacity ?? 0.6
       );
-      effectiveBg.endFill();
       
       effectiveRangeContainer.addChild(effectiveBg);
       effectiveRangeContainer.addChild(effectiveText); 
       
       // Only create range text if weapon.range is not null
       let rangeText: PIXI.Text | null = null;
+      let rangeTextContainer: PIXI.Container | null = null;
+      
       if (weapon.range !== null) {
-        rangeText = new PIXI.Text(weapon.range, rangeStyle);
-        rangeText.resolution = window.devicePixelRatio * 2;
-        rangeText.updateText(true);
-        rangeText.texture.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
-        rangeText.texture.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
-        rangeText.alpha = weaponRangesStyle.fontOpacity;
+        rangeTextContainer = new PIXI.Container();
+        rangeText = RenderingUtils.createOptimisedText(weapon.range, rangeStyle, weaponRangesStyle.fontOpacity);
         rangeText.anchor.set(0, 0.5);
+        
+        // Draw background for range text if backgroundColour is specified
+        // Use type guard to check if backgroundColour exists
+        if ('backgroundColour' in weaponRangesStyle && weaponRangesStyle.backgroundColour) {
+          const rangeBg = new PIXI.Graphics();
+          const rangePadding = { x: 1, y: 0 };
+          const rangeBgWidth = rangeText.width + rangePadding.x;
+          const rangeBgHeight = rangeText.height + rangePadding.y;
+          
+          RenderingUtils.drawBackground(
+            rangeBg,
+            -rangePadding.x,
+            -rangeBgHeight / 2,
+            rangeBgWidth,
+            rangeBgHeight,
+            weaponRangesStyle.backgroundColour,
+            'backgroundOpacity' in weaponRangesStyle 
+              ? weaponRangesStyle.backgroundOpacity ?? 0.6 
+              : 0.6
+          );
+          
+          rangeTextContainer.addChild(rangeBg);
+        }
+        
+        rangeTextContainer.addChild(rangeText);
       }
       
       // Position range elements
       let rangeX = 0;
       effectiveRangeContainer.position.x = rangeX;
       
-      if (rangeText) {
+      if (rangeTextContainer) {
         rangeX += effectiveBgWidth + iconTextSpacing;
-        rangeText.position.x = rangeX;
+        rangeTextContainer.position.x = rangeX;
       }
       
       // Add all range elements to range container
       rangeContainer.addChild(effectiveRangeContainer);
-      if (rangeText) {
-        rangeContainer.addChild(rangeText);
+      if (rangeTextContainer) {
+        rangeContainer.addChild(rangeTextContainer);
       }
       
       // Position the containers
@@ -434,68 +439,5 @@ export class ActorInfoRenderer {
     });
 
     graphics.visible = true;
-  }
-
-  private transformColour(colour?: string | number): number {
-    // Fast path for numeric values
-    if (typeof colour === 'number') {
-      return colour;
-    }
-
-    // Handle string hex colours
-    if (typeof colour === 'string' && colour) {
-      // Remove # prefix if present
-      const hex = colour.charAt(0) === '#' ? colour.slice(1) : colour;
-
-      // Validate hex length
-      if (hex.length !== 3 && hex.length !== 6) {
-        this.logger.error('Invalid hex colour format:', colour);
-        return 0xFFFFFF; // Default white
-      }
-
-      // Expand shorthand hex (e.g., 'F0A' -> 'FF00AA')
-      const fullHex = hex.length === 3
-        ? hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2)
-        : hex;
-
-      // Parse hex to number
-      const parsed = parseInt(fullHex, 16);
-
-      // Validate parsed result
-      if (isNaN(parsed)) {
-        this.logger.error('Failed to parse hex colour:', colour);
-        return 0xFFFFFF; // Default white
-      }
-
-      return parsed;
-    }
-
-    // Default fallback
-    return 0xFFFFFF; // Default white
-  }
-
-  /**
-   * Build text style from context styling configuration
-   */
-  private buildTextStyle(speedsStyle: {
-    font: string;
-    fontSize: number;
-    fontColour: string;
-    fontWeight: string;
-    fontOpacity: number;
-  }): PIXI.TextStyle {
-
-    // Cast fontWeight to TextStyleFontWeight type
-    const fontWeight = speedsStyle.fontWeight as PIXI.TextStyleFontWeight;
-
-    const styleConfig: Partial<PIXI.ITextStyle> = {
-      fontFamily: speedsStyle.font,
-      fontSize: speedsStyle.fontSize,
-      fontWeight: fontWeight,
-      fill: this.transformColour(speedsStyle.fontColour),
-      align: 'left'
-    };
-
-    return new PIXI.TextStyle(styleConfig);
   }
 }

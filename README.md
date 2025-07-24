@@ -46,6 +46,7 @@ To follow the module’s development, you can read the series here: https://hash
 </p>
 
 - **Rangefinder**: Dynamically display 3D, edge‑to‑edge distances using spatial volume between selected tokens and other tokens on the canvas, updating in real time to help players gauge movement, weapon and spell ranges.
+    - Visually distinguishes when a token falls within the source token weapon’s effective range or overall range.
 
 <p align=center>
     <img width="361" height="361" alt="rangeandmovement" src="https://github.com/user-attachments/assets/2d185153-67a8-42cf-9224-d06d156c53b0" />
