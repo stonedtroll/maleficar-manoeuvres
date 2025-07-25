@@ -81,26 +81,24 @@ export class TokenSheetAdapter implements InitialisableService {
             }
 
             const flagPath = `flags.${TokenSheetAdapter.MODULE_NAMESPACE}.${TokenSheetAdapter.VERTICAL_HEIGHT_FLAG}`;
+            
             let verticalHeight = foundry.utils.getProperty(token, flagPath) as number | undefined;
-
-            // If no existing value and this is a new token, use the default setting
-            if (verticalHeight === undefined && !token.id) {
-                verticalHeight = getSetting<number>(SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT);
+            let isExplicitlySet = verticalHeight !== undefined;
+            
+            if (!isExplicitlySet && token.actor?.prototypeToken) {
+                verticalHeight = foundry.utils.getProperty(token.actor.prototypeToken, flagPath) as number | undefined;
+                isExplicitlySet = verticalHeight !== undefined;
             }
 
-            // Check if field already exists
+            let displayValue = '';
+            if (isExplicitlySet && verticalHeight !== undefined) {
+                displayValue = verticalHeight.toFixed(2);
+            }
+
             if (element.querySelector(`[name="${flagPath}"]`)) {
                 this.logger.debug('Vertical height field already exists');
                 return;
             }
-
-            // Log for debugging
-            this.logger.debug('Injecting vertical height field', {
-                tokenId: token.id,
-                tokenName: token.name,
-                isPrototype: !token.id,
-                currentHeight: verticalHeight
-            });
 
             const units = canvas?.scene?.grid.units;
 
@@ -115,10 +113,10 @@ export class TokenSheetAdapter implements InitialisableService {
                 <div class="form-fields">
                     <input type="number" 
                            name="${flagPath}" 
-                           value="${verticalHeight}" 
+                           value="${displayValue}" 
                            step="0.01" 
                            min="0"
-                           placeholder="0"
+                           placeholder="${!isExplicitlySet ? TokenSheetAdapter.getVerticalHeight(token).toFixed(2) : ''}"
                            id="${token.id || 'prototype'}-verticalHeight"
                            data-dtype="Number">
                 </div>
@@ -160,17 +158,19 @@ export class TokenSheetAdapter implements InitialisableService {
     /**
      * Get vertical height for a token
      */
-    static getVerticalHeight(token: Token | TokenDocument): number {
-        const doc = token instanceof Token ? token.document : token;
+    static getVerticalHeight(token: foundry.canvas.placeables.Token | TokenDocument): number {
+        const doc = token instanceof foundry.canvas.placeables.Token ? token.document : token;
         const flagPath = `flags.${MODULE_ID}.${this.VERTICAL_HEIGHT_FLAG}`;
 
-        const verticalHeight = foundry.utils.getProperty(doc, flagPath) as number | undefined;
+        let verticalHeight = foundry.utils.getProperty(doc, flagPath) as number | undefined;
 
-        // If no flag is set, calculate based on system and creature type
+        if (verticalHeight === undefined && doc.actor?.prototypeToken) {
+            verticalHeight = foundry.utils.getProperty(doc.actor.prototypeToken, flagPath) as number | undefined;
+        }
+
         if (verticalHeight === undefined) {
             const defaultHeight = getSetting<number>(SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT) ?? 1.8;
 
-            // Check if it's D&D 5e
             if (game.system.id === 'dnd5e') {
                 return this.calculateHeightForDnd5e(doc, defaultHeight);
             } else {
@@ -299,16 +299,5 @@ export class TokenSheetAdapter implements InitialisableService {
         if (gridSize === 2) return 'lg';
         if (gridSize === 3) return 'huge';
         return 'grg';
-    }
-
-    /**
-     * Set vertical height for a token
-     */
-    static async setVerticalHeight(token: Token | TokenDocument, height: number): Promise<void> {
-        const doc = token instanceof Token ? token.document : token;
-        const updateData = {
-            [`flags.${MODULE_ID}.${this.VERTICAL_HEIGHT_FLAG}`]: height
-        };
-        await doc.update(updateData);
     }
 }

@@ -2,7 +2,7 @@
   "id": "maleficar-manoeuvres",
   "title": "Maleficar Manoeuvres",
   "description": "A Foundry VTT module that provides customizable token boundaries, token snapping, and other enhancements.",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "compatibility": {
     "minimum": "13",
     "verified": "13.346",

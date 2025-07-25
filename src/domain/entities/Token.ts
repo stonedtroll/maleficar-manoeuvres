@@ -17,8 +17,6 @@ export class Token implements SpatialEntity {
     protected _previousRotation?: Rotation;
     protected _previousElevation?: number;
 
-    protected _radius: number;
-
     private _tokenAdapter: AbstractTokenAdapter;
 
     constructor(tokenAdapter: AbstractTokenAdapter) {
@@ -63,7 +61,7 @@ export class Token implements SpatialEntity {
 
     getAABB(): AABB {
         // Simple 2D projection of the cylinder for QuadTree indexing
-        return AABB.fromCircle(this.position, this.radius);
+        return AABB.fromCircle(this.centre, this.radius);
     }
 
     get id(): string {
@@ -104,7 +102,7 @@ export class Token implements SpatialEntity {
     get verticalExtent(): VerticalExtent {
         return new VerticalExtent(
             this._tokenAdapter.elevation,
-            this._tokenAdapter.elevation + this._tokenAdapter.verticalHeight
+            this._tokenAdapter.elevation + this.verticalHeight
         );
     }
 
@@ -118,8 +116,8 @@ export class Token implements SpatialEntity {
 
     get centre(): Vector2 {
         return new Vector2(
-            this._tokenAdapter.position.x + this._tokenAdapter.width / 2,
-            this._tokenAdapter.position.y + this._tokenAdapter.height / 2
+            this._tokenAdapter.position.x + this.width / 2,
+            this._tokenAdapter.position.y + this.height / 2
         );
     }
 
@@ -127,7 +125,7 @@ export class Token implements SpatialEntity {
         return new Vector3(
             this.centre.x,
             this.centre.y,
-            this._tokenAdapter.elevation + this._tokenAdapter.verticalHeight / 2
+            this._tokenAdapter.elevation + this.verticalHeight / 2
         );
     }
 

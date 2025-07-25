@@ -136,7 +136,8 @@ export class MovementValidator {
       width: movingToken.width,
       height: movingToken.height,
       elevation: movingToken.elevation,
-      disposition: movingToken.disposition
+      disposition: movingToken.disposition,
+      verticalHeight: movingToken.verticalHeight
     });
 
     const collisionResult = this.collisionDetector.checkCollision(collisionEntity, obstacles);
@@ -351,7 +352,8 @@ export class MovementValidator {
         width: movingToken.width,
         height: movingToken.height,
         elevation: ignoreElevation ? movingToken.elevation : position.z,
-        disposition: movingToken.disposition
+        disposition: movingToken.disposition,
+        verticalHeight: movingToken.verticalHeight
       });
 
       // Check for collisions

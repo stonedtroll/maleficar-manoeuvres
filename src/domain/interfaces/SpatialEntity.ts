@@ -21,6 +21,7 @@ export interface SpatialEntity {
     canPassThrough(disposition: DispositionValue): boolean;
 
     verticalExtent: VerticalExtent;
+    verticalHeight: number;
     position: Vector2;
     elevation: number;
     width: number;

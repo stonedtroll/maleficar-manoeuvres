@@ -22,6 +22,7 @@ export interface CollisionEntityConfig {
     readonly height: number;
     readonly elevation: number;
     readonly disposition: DispositionValue;
+    readonly verticalHeight: number; 
 }
 
 /**
@@ -34,6 +35,7 @@ export class CollisionEntity implements SpatialEntity {
     private readonly _disposition: DispositionValue;
     private readonly _width: number;
     private readonly _height: number;
+    private readonly _verticalHeight: number;
 
     constructor(config: CollisionEntityConfig) {
         this._position = Object.freeze(config.position);
@@ -41,6 +43,7 @@ export class CollisionEntity implements SpatialEntity {
         this._height = config.height;
         this._elevation = config.elevation;
         this._disposition = config.disposition;
+        this._verticalHeight = config.verticalHeight;
 
         Object.freeze(this);
     }
@@ -52,14 +55,19 @@ export class CollisionEntity implements SpatialEntity {
     get radius(): number {
         return Math.max(this.width, this.height) / 2;
     }
+
     get elevation(): number {
         return this._elevation;
+    }
+
+    get verticalHeight(): number {
+        return this._verticalHeight;
     }
 
     get verticalExtent(): VerticalExtent {
         return new VerticalExtent(
             this._elevation,
-            this._elevation + 1
+            this._elevation + this._verticalHeight
         );
     }
 
