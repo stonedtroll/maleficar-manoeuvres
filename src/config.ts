@@ -5,6 +5,7 @@ export const MODULE_ABBR = 'MM';
 export const SETTINGS = {
   LOG_LEVEL: 'logLevel',
   TOKEN_BORDER_INDICATOR: 'tokenBorderIndicator',
+  TOKEN_DEFAULT_VERTICAL_HEIGHT: 'tokenDefaultVerticalHeight'
 } as const;
 
 export const LOG_LEVEL_CHOICES = {

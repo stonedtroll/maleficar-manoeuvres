@@ -49,6 +49,9 @@ To follow the module’s development, you can read the series here: https://hash
   
 When a token is being dragged, its boundary is attached to the preview token.
 
+### Token Configuration
+- **Token Height**: Can now be set per‑token or globally in the module settings. If a token’s height is left blank, the default value is used with multipliers based on creature size and type. This height is factored into rangefinding, cover determination, and collision detection.
+
 ## Usage
 - Hold 'm' to display token boundaries and facing arcs.
 - The facing-arc colour indicates each token’s disposition.

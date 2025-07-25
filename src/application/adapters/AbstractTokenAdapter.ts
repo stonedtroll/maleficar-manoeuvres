@@ -22,4 +22,5 @@ export abstract class AbstractTokenAdapter {
     abstract get isControlledByCurrentUser(): boolean;
     abstract get isOwnedByCurrentUser(): boolean;
     abstract get actorId(): string | null;
+    abstract get verticalHeight(): number;
 }

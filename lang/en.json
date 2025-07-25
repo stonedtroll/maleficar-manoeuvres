@@ -1,56 +1,39 @@
 {
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Name": "Log Level",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Hint": "Set the minimum log level for the module. Debug and Trace levels enable verbose logging for development. Use \"Off\" to disable all logging.",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Debug": "Debug",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Info": "Info",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Warning": "Warning",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Error": "Error",  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Fatal": "Fatal",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.None": "Off",
+  "maleficar-manoeuvres": {
+    "settings": {
+      "logLevel": {
+        "name": "Log Level",
+        "hint": "Set the logging level for the module",
+        "choices": {
+          "debug": "Debug — Show every log message, including detailed diagnostics",
+          "info": "Info — Show informational messages and above (hides debug)",
+          "warn": "Warning — Show only warnings and errors",
+          "error": "Error — Show only error-level messages",
+          "fatal": "Fatal — Show only critical (fatal) errors",
+          "none": "None — Disable all logging"
+        }
+      },
+      "tokenBorderIndicator": {
+        "name": "Token Border Indicator",
+        "hint": "Foundry default outline around tokens."
+      },
+      "tokenDefaultVerticalHeight": {
+        "name": "Default Token Height",
+        "hint": "Default vertical height of a human‑sized creature."
 
-  "MALEFICAR_MANOEUVRES.Settings.TokenSnapEnabled.Name": "Enable Token-to-Token Snapping",
-  "MALEFICAR_MANOEUVRES.Settings.TokenSnapEnabled.Hint": "When enabled, tokens will snap to other tokens when dropped on them.",
-  
-  "MALEFICAR_MANOEUVRES.Settings.SnapDuringAnimation.Name": "Snap During Animation",
-  "MALEFICAR_MANOEUVRES.Settings.SnapDuringAnimation.Hint": "When enabled, tokens will snap during animated movements in addition to drag operations. When disabled, snapping only occurs during manual dragging.",
-  
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Name": "Performance Optimisation",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Hint": "Choose a performance profile. Foundry Default uses standard Foundry rendering without custom optimisations.",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.FoundryDefault": "Foundry Default - Standard rendering",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.Performance": "Performance - Maximum speed, reduced visuals",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.Balanced": "Balanced - Good performance with decent visuals",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.Quality": "Quality - Best visuals, may impact performance",
-  
-  "MALEFICAR_MANOEUVRES.Settings.ShowTokenBounds.Name": "Show Token Bounds Overlay",
-  "MALEFICAR_MANOEUVRES.Settings.ShowTokenBounds.Hint": "Display visual overlays showing token collision boundaries. Useful for debugging collision detection and positioning.",
-  "MALEFICAR_MANOEUVRES.Notifications.ModuleReady": "{title} active. Enhanced token movement and rendering enabled.",
-  "MALEFICAR_MANOEUVRES.Notifications.InitialisationFailed": "{title}: Failed to initialise - check console for details",
-  "MALEFICAR_MANOEUVRES.Notifications.OptimisationChanged": "Performance optimisation changed to: {preset}",
-  "MALEFICAR_MANOEUVRES.Notifications.OptimisationFailed": "Failed to apply optimisation settings",
-  "MALEFICAR_MANOEUVRES.Notifications.TokenBoundsEnabled": "Token bounds overlay enabled",
-  "MALEFICAR_MANOEUVRES.Notifications.TokenBoundsDisabled": "Token bounds overlay disabled",
-  "MALEFICAR_MANOEUVRES.Notifications.NoSnapBlockedOccupied": "Token drop blocked: Space is occupied and no snap occurred.",
-  "MALEFICAR_MANOEUVRES.Notifications.MoveRevertedCollision": "Movement reverted: Collision detected with an existing token.",
-  "MALEFICAR_MANOEUVRES.Notifications.MoveRevertedSnappingFailed": "Movement reverted: Token snapping failed.",
-  "MALEFICAR_MANOEUVRES.Console.LogLevelChanged": "Log level change requested: {level}",
-  "MALEFICAR_MANOEUVRES.Console.LoggerUpdated": "Logger updated with new level: {level}",
-  "MALEFICAR_MANOEUVRES.Console.DebugEnabled": "Debug logging is now enabled!",
-  "MALEFICAR_MANOEUVRES.Console.OptimisationPresetChanged": "Optimisation preset changed to: {preset}",
-  "MALEFICAR_MANOEUVRES.Console.CreatingLogger": "Creating Foundry logger with level: {levelName} ({level})",  "MALEFICAR_MANOEUVRES.Console.LoggerInitialised": "Logger initialised with level: {levelName} ({level})",
-  "MALEFICAR_MANOEUVRES.Console.UpdatingLoggerLevel": "Updating logger level to: {levelName} ({level})",
-  "MALEFICAR_MANOEUVRES.Console.LoggerRecreated": "Logger recreated. New level: {levelName} ({level})",
-
-  "MALEFICAR_MANOEUVRES.Errors.LoggerUpdateFailed": "Error updating log level: {error}",
-  "MALEFICAR_MANOEUVRES.Errors.LoggerFunctionUnavailable": "updateMaleficarLoggerLevel function not available - module may not be fully initialised",
-  "MALEFICAR_MANOEUVRES.Errors.OptimisationApplicationFailed": "Error applying optimisation preset: {error}",
-  "MALEFICAR_MANOEUVRES.Errors.ExposeLog4FoundryFailed": "Failed to expose log4foundry globally",
-  "MALEFICAR_MANOEUVRES.Errors.LoggerReinitialisationFailed": "Failed to re-initialise logger",
-  
-  "MALEFICAR": {
-    "Settings": {
-      "HideDefaultSelectionIndicator": {
-        "Name": "Hide Default Selection Indicator",
-        "Hint": "When enabled, removes the default square border that appears when a token is selected"
       }
+    },
+    "tokenSheet": {
+      "verticalHeight": {
+        "label": "Vertical Height",
+        "hint": "The token's height from base to top, in scene units ({units})."
+      }
+    },
+    "notifications": {
+      "moduleInitialised": "Maleficar Manoeuvres initialised successfully",
+      "settingChanged": "Setting '{setting}' updated to: {value}",
+      "settingFailed": "Failed to update setting '{setting}'",
+      "logLevelChanged": "Log level changed to: {level}"
     }
   }
 }

@@ -2,6 +2,7 @@ import { Vector2 } from "../../domain/value-objects/Vector2.js";
 import { Rotation } from "../../domain/value-objects/Rotation.js";
 import { AbstractTokenAdapter } from "../../application/adapters/AbstractTokenAdapter.js";
 import { MovementTypes } from "../../domain/value-objects/Speed.js";
+import { TokenSheetAdapter } from "./TokenSheetAdapter.js";
 
 import { DISPOSITION, type DispositionValue } from "../../domain/constants/TokenDisposition.js";
 
@@ -76,5 +77,9 @@ export class TokenAdapter extends AbstractTokenAdapter {
 
     get actorName(): string | null {
         return this.token.actor?.name || null;
+    }
+
+    get verticalHeight(): number {
+        return TokenSheetAdapter.getVerticalHeight(this.token);
     }
 }

@@ -1,47 +1,38 @@
 {
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Name": "Logging Level",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Hint": "Set how chatty the module gets in the console. Debug and Trace levels will rabbit on for development work. Chuck it on \"Off\" to shut it up completely.",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Debug": "Debug (Fair Dinkum Chatty)",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Info": "Info (Just the Good Bits)",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Warning": "Warnings (Heads Up, Mate)",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Error": "Errors (Something's Gone Pear-Shaped)",  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.Fatal": "Fatal (She's Carked It)",
-  "MALEFICAR_MANOEUVRES.Settings.LogLevel.Choices.None": "Off (Quiet as a Mouse)",
-
-  "MALEFICAR_MANOEUVRES.Settings.TokenSnapEnabled.Name": "Enable Token Magnetism",
-  "MALEFICAR_MANOEUVRES.Settings.TokenSnapEnabled.Hint": "When switched on, tokens will stick to each other like a joey to its mum when you drop 'em nearby.",
-  
-  "MALEFICAR_MANOEUVRES.Settings.SnapDuringAnimation.Name": "Snap During Movement",
-  "MALEFICAR_MANOEUVRES.Settings.SnapDuringAnimation.Hint": "When enabled, tokens will stick together during animated movements as well as dragging. Turn it off and they'll only snap when you're manually dragging the little blighters.",  
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Name": "Performance Tuning",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Hint": "Choose how hard you want to push the engine. Foundry Default keeps things stock standard without any fancy modifications.",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.FoundryDefault": "Foundry Default - No Worries, Keep It Simple",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.Performance": "Performance - She'll Be Right, Flat Out",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.Balanced": "Balanced - Fair Dinkum Compromise",
-  "MALEFICAR_MANOEUVRES.Settings.OptimisationPreset.Choices.Quality": "Quality - Pretty as a Picture (Might Bog Down)",
-  
-  "MALEFICAR_MANOEUVRES.Settings.ShowTokenBounds.Name": "Show Token Boundaries",
-  "MALEFICAR_MANOEUVRES.Settings.ShowTokenBounds.Hint": "Show the invisible lines around tokens so you can see what's what. Bonzer for debugging when tokens are playing up.",
-
-  "MALEFICAR_MANOEUVRES.Notifications.ModuleReady": "{title} is up and running! Token movement and rendering are now tickety-boo.",
-  "MALEFICAR_MANOEUVRES.Notifications.InitialisationFailed": "{title}: Crikey! Failed to get going - have a squiz at the console for details",
-  "MALEFICAR_MANOEUVRES.Notifications.OptimisationChanged": "Performance tuning switched to: {preset}",
-  "MALEFICAR_MANOEUVRES.Notifications.OptimisationFailed": "Couldn't apply the performance settings - something's gone walkabout",
-  "MALEFICAR_MANOEUVRES.Notifications.TokenBoundsEnabled": "Token boundaries are now visible, mate",
-  "MALEFICAR_MANOEUVRES.Notifications.TokenBoundsDisabled": "Token boundaries are hidden again",
-  "MALEFICAR_MANOEUVRES.Notifications.NoSnapBlockedOccupied": "Token drop blocked: That spot's already taken and no snapping happened.",
-  "MALEFICAR_MANOEUVRES.Notifications.MoveRevertedCollision": "Movement cancelled: Bumped into another token, mate.",
-  "MALEFICAR_MANOEUVRES.Notifications.MoveRevertedSnappingFailed": "Movement cancelled: Token snapping went belly-up.",  "MALEFICAR_MANOEUVRES.Console.LogLevelChanged": "Log level change requested: {level}",
-  "MALEFICAR_MANOEUVRES.Console.LoggerUpdated": "Logger's been updated with new level: {level}",
-  "MALEFICAR_MANOEUVRES.Console.DebugEnabled": "Debug logging is now switched on, mate!",
-  "MALEFICAR_MANOEUVRES.Console.OptimisationPresetChanged": "Performance tuning switched to: {preset}",
-  "MALEFICAR_MANOEUVRES.Console.CreatingLogger": "Setting up Foundry logger with level: {levelName} ({level})",
-  "MALEFICAR_MANOEUVRES.Console.LoggerInitialised": "Logger's all set up with level: {levelName} ({level})",
-  "MALEFICAR_MANOEUVRES.Console.UpdatingLoggerLevel": "Updating logger level to: {levelName} ({level})",
-  "MALEFICAR_MANOEUVRES.Console.LoggerRecreated": "Logger rebuilt. New level: {levelName} ({level})",
-
-  "MALEFICAR_MANOEUVRES.Errors.LoggerUpdateFailed": "Error updating log level: {error}",
-  "MALEFICAR_MANOEUVRES.Errors.LoggerFunctionUnavailable": "updateMaleficarLoggerLevel function's gone walkabout - module might not be fully loaded yet",
-  "MALEFICAR_MANOEUVRES.Errors.OptimisationApplicationFailed": "Error applying performance preset: {error}",
-  "MALEFICAR_MANOEUVRES.Errors.ExposeLog4FoundryFailed": "Couldn't expose log4foundry globally - something's not right",
-  "MALEFICAR_MANOEUVRES.Errors.LoggerReinitialisationFailed": "Failed to re-initialise logger - she's not playing ball"
+  "maleficar-manoeuvres": {
+    "settings": {
+      "logLevel": {
+        "name": "Log Level",
+        "hint": "Set the logging level for the module, mate",
+        "choices": {
+          "debug": "Debug — Show every bloody log message, the whole lot",
+          "info": "Info — Show the important stuff and above (chuck out debug)",
+          "warn": "Warning — Only the dodgy bits and errors",
+          "error": "Error — Just when things go pear-shaped",
+          "fatal": "Fatal — Only when it's properly cactus",
+          "none": "None — She'll be right, no logging"
+        }
+      },
+      "tokenBorderIndicator": {
+        "name": "Token Border Indicator",
+        "hint": "Foundry's default outline around your tokens, cobber."
+      },
+      "tokenDefaultVerticalHeight": {
+        "name": "Default Token Height",
+        "hint": "Default vertical height of a human‑sized creature."
+      }
+    },
+    "tokenSheet": {
+      "verticalHeight": {
+        "label": "Vertical Height",
+        "hint": "How tall your token is from bottom to top, in scene units ({units})."
+      }
+    },
+    "notifications": {
+      "moduleInitialised": "Maleficar Manoeuvres is good to go, legend!",
+      "settingChanged": "Setting '{setting}' sorted to: {value}",
+      "settingFailed": "Strewth! Couldn't update setting '{setting}'",
+      "logLevelChanged": "Log level's now: {level}"
+    }
+  }
 }

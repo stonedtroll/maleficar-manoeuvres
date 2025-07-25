@@ -64,15 +64,23 @@ export class TokenInfoRenderer {
             totalWidth += iconSize + iconTextSpacing;
         }
 
-        // Create container with background
-        const bgHeight = Math.max(text.height, iconSize);
-        const container = RenderingUtils.createBackgroundContainer(
-            totalWidth,
-            bgHeight,
-            rangeStyle.backgroundColour,
-            rangeStyle.backgroundOpacity,
-            padding
-        );
+        // Create container - with or without background based on whether colour is provided
+        let container: PIXI.Container;
+        
+        if (rangeStyle.backgroundColour && rangeStyle.backgroundOpacity !== undefined) {
+            // Create container with background
+            const bgHeight = Math.max(text.height, iconSize);
+            container = RenderingUtils.createBackgroundContainer(
+                totalWidth,
+                bgHeight,
+                rangeStyle.backgroundColour,
+                rangeStyle.backgroundOpacity,
+                padding
+            );
+        } else {
+            // Create plain container without background
+            container = new PIXI.Container();
+        }
 
         // Position elements
         if (iconSprite) {

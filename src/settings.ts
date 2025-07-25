@@ -2,16 +2,18 @@ import { MODULE_ID, SETTINGS } from './config.js';
 import { LogLevel, LoggerFactory } from '../lib/log4foundry/log4foundry.js';
 
 /**
- * Log level choices for settings
+ * Get localised log level choices
  */
-export const LOG_LEVEL_CHOICES = {
-  debug: 'Debug   — Show every log message, including detailed diagnostics',
-  info:  'Info    — Show informational messages and above (hides debug)',
-  warn:  'Warning — Show only warnings and errors',
-  error: 'Error   — Show only error-level messages',
-  fatal: 'Fatal   — Show only critical (fatal) errors',
-  none:  'None    — Disable all logging'
-};
+export function getLogLevelChoices(): Record<string, string> {
+  return {
+    debug: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.debug`),
+    info:  game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.info`),
+    warn:  game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.warn`),
+    error: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.error`),
+    fatal: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.fatal`),
+    none:  game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.none`)
+  };
+}
 
 /**
  * Convert string log level to LogLevel enum
@@ -46,16 +48,17 @@ export function registerSettings(): void {
 
   try {
     game.settings.register(MODULE_ID, SETTINGS.LOG_LEVEL, {
-      name: 'Log Level',
-      hint: 'Set the logging level for the module',
+      name: game.i18n.localize(`${MODULE_ID}.settings.logLevel.name`),
+      hint: game.i18n.localize(`${MODULE_ID}.settings.logLevel.hint`),
       scope: 'client',
       config: true,
       type: String,
-      choices: LOG_LEVEL_CHOICES,
+      choices: getLogLevelChoices(),
       default: 'info',
       onChange: (value: string) => {
         try {
-          console.log(`[${MODULE_ID}] Log level changed to: ${value}`);
+          const localisedMessage = game.i18n.format(`${MODULE_ID}.notifications.logLevelChanged`, { level: value });
+          console.log(`[${MODULE_ID}] ${localisedMessage}`);
 
           // Convert string level to LogLevel enum
           const level = getLogLevelFromString(value);
@@ -71,8 +74,8 @@ export function registerSettings(): void {
     });
 
     game.settings.register(MODULE_ID, SETTINGS.TOKEN_BORDER_INDICATOR, {
-      name: 'Token Border Indicator',
-      hint: 'Foundry default outline around tokens.',
+      name: game.i18n.localize(`${MODULE_ID}.settings.tokenBorderIndicator.name`),
+      hint: game.i18n.localize(`${MODULE_ID}.settings.tokenBorderIndicator.hint`),
       scope: 'client',
       config: true,
       type: Boolean,
@@ -82,7 +85,17 @@ export function registerSettings(): void {
       }
     });
 
-    console.log(`[${MODULE_ID}] All settings registered successfully`);
+    game.settings.register(MODULE_ID, SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT, {
+      name: game.i18n.localize(`${MODULE_ID}.settings.tokenDefaultVerticalHeight.name`),
+      hint: game.i18n.format(`${MODULE_ID}.settings.tokenDefaultVerticalHeight.hint`),
+      scope: 'world',
+      config: true,
+      type: Number,
+      default: 1.8
+    });
+
+    const successMessage = game.i18n.localize(`${MODULE_ID}.notifications.moduleInitialised`);
+    console.log(`[${MODULE_ID}] ${successMessage}`);
 
   } catch (error) {
     console.error(`[${MODULE_ID}] Failed to register settings:`, error);
@@ -107,9 +120,16 @@ export function getSetting<T>(settingKey: string): T {
 export async function setSetting<T>(settingKey: string, value: T): Promise<void> {
   try {
     await game.settings.set(MODULE_ID, settingKey, value);
-    console.log(`[${MODULE_ID}] Setting '${settingKey}' updated to:`, value);
+    const message = game.i18n.format(`${MODULE_ID}.notifications.settingChanged`, { 
+      setting: settingKey, 
+      value: String(value) 
+    });
+    console.log(`[${MODULE_ID}] ${message}`);
   } catch (error) {
-    console.error(`[${MODULE_ID}] Failed to set setting '${settingKey}':`, error);
+    const errorMessage = game.i18n.format(`${MODULE_ID}.notifications.settingFailed`, { 
+      setting: settingKey 
+    });
+    console.error(`[${MODULE_ID}] ${errorMessage}:`, error);
     throw error;
   }
 }
@@ -121,6 +141,7 @@ function getDefaultSettingValue(settingKey: string): unknown {
   const defaults: Record<string, unknown> = {
     [SETTINGS.LOG_LEVEL]: 'info',
     [SETTINGS.TOKEN_BORDER_INDICATOR]: true,
+    [SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT]: 0,
   };
 
   return defaults[settingKey] ?? null;

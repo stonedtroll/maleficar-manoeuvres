@@ -53,10 +53,10 @@ export class Token implements SpatialEntity {
             centre: new Vector3(
                 this.centre.x,
                 this.centre.y,
-                this.elevation + 0.5
+                this.elevation + this._tokenAdapter.verticalHeight / 2
             ),
             radius: this.radius,
-            height: 1,
+            height: this._tokenAdapter.verticalHeight,
             axis: 'z' // Always vertical
         };
     }
@@ -104,7 +104,7 @@ export class Token implements SpatialEntity {
     get verticalExtent(): VerticalExtent {
         return new VerticalExtent(
             this._tokenAdapter.elevation,
-            this._tokenAdapter.elevation + 1
+            this._tokenAdapter.elevation + this._tokenAdapter.verticalHeight
         );
     }
 
@@ -127,7 +127,7 @@ export class Token implements SpatialEntity {
         return new Vector3(
             this.centre.x,
             this.centre.y,
-            this._tokenAdapter.elevation + 0.5
+            this._tokenAdapter.elevation + this._tokenAdapter.verticalHeight / 2
         );
     }
 
@@ -163,6 +163,10 @@ export class Token implements SpatialEntity {
         return this._tokenAdapter.actorId;
     }
 
+    get verticalHeight(): number {
+        return this._tokenAdapter.verticalHeight;
+    }
+
     /**
      * Check if another token can pass through this one based on disposition.
      */
@@ -186,6 +190,4 @@ export class Token implements SpatialEntity {
         // Different dispositions block each other by default
         return false;
     }
-
-
 }

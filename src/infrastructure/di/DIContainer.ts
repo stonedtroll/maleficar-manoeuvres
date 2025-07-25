@@ -25,6 +25,7 @@ import { AABB } from '../../domain/value-objects/AABB.js';
 import { Vector2 } from '../../domain/value-objects/Vector2.js';
 import { TokenMovementService } from '../services/TokenMovementService.js';
 import { OverlayContextBuilderRegistry } from '../../application/registries/OverlayContextBuilderRegistry.js';
+import { TokenSheetAdapter } from '../adapters/TokenSheetAdapter.js';
 
 export class DIContainer {
   private readonly services = new Map<string, any>();
@@ -53,6 +54,7 @@ export class DIContainer {
       const systemEventAdapter = new SystemEventAdapter(eventBus);
       const tokenMeshAdapter = new TokenMeshAdapter();
       const tokenMovementService = new TokenMovementService(eventBus);
+      const tokenSheetAdapter = new TokenSheetAdapter();
 
       const sceneBounds = new AABB(
         new Vector2(0, 0), // min point
@@ -117,6 +119,7 @@ export class DIContainer {
       this.services.set('snapCalculator', snapCalculator);
       this.services.set('commandExecutor', commandExecutor);
       this.services.set('tokenMovementService', tokenMovementService);
+      this.services.set('tokenSheetAdapter', tokenSheetAdapter);
 
       // Initialise services that need it
       await this.initialiseServices();
