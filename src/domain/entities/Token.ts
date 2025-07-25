@@ -61,7 +61,7 @@ export class Token implements SpatialEntity {
 
     getAABB(): AABB {
         // Simple 2D projection of the cylinder for QuadTree indexing
-        return AABB.fromCircle(this.centre, this.radius);
+        return AABB.fromCircle(this.position, this.radius);
     }
 
     get id(): string {
