@@ -18,8 +18,9 @@ export interface SpatialEntity {
 
     blocksMovement?(): boolean;
 
-    canPassThrough(disposition: DispositionValue): boolean;
+    canPassThrough(obstacle: SpatialEntity): boolean;
 
+    isBlockingObstacle: boolean;
     verticalExtent: VerticalExtent;
     verticalHeight: number;
     position: Vector2;

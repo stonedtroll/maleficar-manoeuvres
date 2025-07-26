@@ -23,4 +23,5 @@ export abstract class AbstractTokenAdapter {
     abstract get isOwnedByCurrentUser(): boolean;
     abstract get actorId(): string | null;
     abstract get verticalHeight(): number;
+    abstract get isBlockingObstacle(): boolean;
 }

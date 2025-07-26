@@ -165,23 +165,30 @@ export class Token implements SpatialEntity {
         return this._tokenAdapter.verticalHeight;
     }
 
+    get isBlockingObstacle(): boolean {
+        return this._tokenAdapter.isBlockingObstacle;
+    }
     /**
-     * Check if another token can pass through this one based on disposition.
+     * Check if another token can pass through this one based on disposition and type.
      */
-    canPassThrough(obstacleDisposition: DispositionValue): boolean {
-        // Tokens with matching dispositions can pass through each other
-        if (this._tokenAdapter.disposition === obstacleDisposition) {
+    canPassThrough(obstacle: Token): boolean {
+
+        if (!this._tokenAdapter.isBlockingObstacle || !obstacle.isBlockingObstacle) {
+            return true;
+        }
+        
+        if (this._tokenAdapter.disposition === obstacle.disposition) {
             return true;
         }
 
         if (this._tokenAdapter.disposition === DISPOSITION.SECRET ||
-            obstacleDisposition === DISPOSITION.SECRET) {
+            obstacle.disposition === DISPOSITION.SECRET) {
             return false;
         }
 
         // Neutral tokens have special pass-through rules
         if (this._tokenAdapter.disposition === DISPOSITION.NEUTRAL ||
-            obstacleDisposition === DISPOSITION.NEUTRAL) {
+            obstacle.disposition === DISPOSITION.NEUTRAL) {
             return true;
         }
 

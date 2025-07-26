@@ -82,4 +82,23 @@ export class TokenAdapter extends AbstractTokenAdapter {
     get verticalHeight(): number {
         return TokenSheetAdapter.getVerticalHeight(this.token);
     }
+
+    get isSwarm(): boolean {
+
+        const actor = this.token.actor;
+        if (!actor) {
+            return false;
+        }
+
+        if (game.system.id === 'dnd5e') {
+            return !!actor.system?.details?.type?.swarm;
+        }
+
+        return false;
+    }
+
+    get isBlockingObstacle(): boolean {
+        console.log(`TokenAdapter.isBlockingObstacle called for token ${this.token.name}: ${!this.isSwarm}`);
+        return !this.isSwarm;
+    }
 }

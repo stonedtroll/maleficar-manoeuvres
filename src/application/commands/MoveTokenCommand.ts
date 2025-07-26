@@ -136,7 +136,8 @@ export class MoveTokenCommand implements Command<MoveResult> {
             height: updatingToken.height,
             elevation: endPosition.z,
             disposition: updatingToken.disposition,
-            verticalHeight: updatingToken.verticalHeight
+            verticalHeight: updatingToken.verticalHeight,
+            isBlockingObstacle: updatingToken.isBlockingObstacle
         });
 
         // Validate movement

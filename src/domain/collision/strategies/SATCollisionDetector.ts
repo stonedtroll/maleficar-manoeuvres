@@ -35,6 +35,11 @@ export class SATCollisionDetector implements CollisionDetector {
     movingEntity: SpatialEntity,
     obstacles: SpatialEntity[]
   ): CollisionResult {
+
+    if (!movingEntity.isBlockingObstacle) {
+      return { isColliding: false, collidingWith: [] };
+    }
+
     const collidingObstacles: SpatialEntity[] = [];
 
     for (const obstacle of obstacles) {
@@ -56,6 +61,10 @@ export class SATCollisionDetector implements CollisionDetector {
     entityA: SpatialEntity,
     entityB: SpatialEntity
   ): boolean {
+
+    if (!entityA.isBlockingObstacle || !entityB.isBlockingObstacle) {
+      return false;
+    }
 
     const extentA = entityA.verticalExtent;
     const extentB = entityB.verticalExtent;

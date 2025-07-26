@@ -23,6 +23,7 @@ export interface CollisionEntityConfig {
     readonly elevation: number;
     readonly disposition: DispositionValue;
     readonly verticalHeight: number; 
+    readonly isBlockingObstacle: boolean; 
 }
 
 /**
@@ -36,6 +37,7 @@ export class CollisionEntity implements SpatialEntity {
     private readonly _width: number;
     private readonly _height: number;
     private readonly _verticalHeight: number;
+    private readonly _isBlockingObstacle: boolean;
 
     constructor(config: CollisionEntityConfig) {
         this._position = Object.freeze(config.position);
@@ -44,6 +46,7 @@ export class CollisionEntity implements SpatialEntity {
         this._elevation = config.elevation;
         this._disposition = config.disposition;
         this._verticalHeight = config.verticalHeight;
+        this._isBlockingObstacle = config.isBlockingObstacle;
 
         Object.freeze(this);
     }
@@ -124,9 +127,18 @@ export class CollisionEntity implements SpatialEntity {
         return 'token';
     }
 
-    canPassThrough(disposition: DispositionValue): boolean {
-        return this._disposition === disposition ||
-            disposition === DISPOSITION.NEUTRAL ||
+    get isBlockingObstacle(): boolean {
+        return this._isBlockingObstacle;
+    }
+
+    canPassThrough(obstacle: CollisionEntity): boolean {
+
+        if (!this._isBlockingObstacle || !obstacle.isBlockingObstacle) {
+            return true;
+        }
+
+        return this._disposition === obstacle.disposition ||
+            obstacle.disposition === DISPOSITION.NEUTRAL ||
             this._disposition === DISPOSITION.NEUTRAL;
     }
 

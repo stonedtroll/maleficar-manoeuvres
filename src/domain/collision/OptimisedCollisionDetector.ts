@@ -66,6 +66,11 @@ export class OptimisedCollisionDetector implements CollisionDetector {
     movingEntity: SpatialEntity,
     obstacles: SpatialEntity[]
   ): CollisionResult {
+
+    if (!movingEntity.isBlockingObstacle) {
+      return { isColliding: false, collidingWith: [] };
+    }
+
     const collidingObstacles: SpatialEntity[] = [];
     const movingAABB = movingEntity.getAABB();
     const movingVerticalExtent = movingEntity.verticalExtent;
@@ -114,6 +119,11 @@ export class OptimisedCollisionDetector implements CollisionDetector {
     entityA: SpatialEntity,
     entityB: SpatialEntity
   ): boolean {
+
+    if (!entityA.isBlockingObstacle || !entityB.isBlockingObstacle) {
+      return false;
+    }
+    
     // Quick elevation check
     if (!entityA.verticalExtent.overlaps(entityB.verticalExtent)) {
       return false;

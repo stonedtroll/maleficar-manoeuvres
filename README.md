@@ -17,6 +17,7 @@ To follow the module’s development, you can read the series here: https://hash
 
 ### Movement System
 - **Collision Detection**: 3D collision detection.
+    - Accommodates tokens marked as non‑blocking (like swarms).
 - **Snap-to-Position**: Positioning that snaps tokens to valid locations when movement is blocked.
 - **Elevation Support**: 3D movement with height-based collision detection.
 - **Respects Disposition**:

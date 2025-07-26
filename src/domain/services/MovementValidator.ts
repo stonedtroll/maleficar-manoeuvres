@@ -86,19 +86,14 @@ export class MovementValidator {
       return distanceValidation;
     }
 
-    const blockingObstacles = this.filterBlockingObstacles(startToken, obstacles);
-
-    this.logger.debug('Blocking obstacles for path validation', {
-      totalObstacles: obstacles.length,
-      blockingCount: blockingObstacles.length
-    });
+    const nonPassableObstacles = this.getNonPassableObstacles(startToken, obstacles);
 
     const pathResult = this.performPathValidation(
       startPosition,
       endPosition,
       travelDistance,
       movingToken,
-      blockingObstacles,
+      nonPassableObstacles,
       ignoreElevation
     );
 
@@ -106,8 +101,9 @@ export class MovementValidator {
       return this.createBlockedResult('path_blocked', pathResult);
     }
 
-    // Validate destination (uses all obstacles, ignoring disposition)
-    const destinationResult = this.validateDestination(movingToken, obstacles);
+    const blockingObstacles = this.filterBlockingObstacles(obstacles);
+
+    const destinationResult = this.validateDestination(movingToken, blockingObstacles);
 
     if (destinationResult.type === 'blocked') {
       return this.createDestinationBlockedResult(
@@ -137,7 +133,8 @@ export class MovementValidator {
       height: movingToken.height,
       elevation: movingToken.elevation,
       disposition: movingToken.disposition,
-      verticalHeight: movingToken.verticalHeight
+      verticalHeight: movingToken.verticalHeight,
+      isBlockingObstacle: movingToken.isBlockingObstacle
     });
 
     const collisionResult = this.collisionDetector.checkCollision(collisionEntity, obstacles);
@@ -209,23 +206,23 @@ export class MovementValidator {
   /**
    * Filters obstacles based on disposition rules.
    */
-  private filterBlockingObstacles(
+  private getNonPassableObstacles(
     movingEntity: SpatialEntity,
     obstacles: SpatialEntity[]
   ): SpatialEntity[] {
-    // No disposition = blocked by everything visible
-    if (movingEntity.disposition === undefined) {
-      return obstacles;
-    }
 
     return obstacles.filter(obstacle => {
-      // Obstacles without disposition always block
-      if (obstacle.disposition === undefined) {
-        return true;
-      }
-      // Check if moveable can pass through this obstacle
-      return !movingEntity.canPassThrough(obstacle.disposition);
+      return !movingEntity.canPassThrough(obstacle);
     });
+  }
+
+  private filterBlockingObstacles(
+    obstacles: SpatialEntity[]
+  ): SpatialEntity[] {
+
+    const blockingObstacles = obstacles.filter(obstacle => obstacle.isBlockingObstacle);
+
+    return blockingObstacles;
   }
 
   /**
@@ -353,7 +350,8 @@ export class MovementValidator {
         height: movingToken.height,
         elevation: ignoreElevation ? movingToken.elevation : position.z,
         disposition: movingToken.disposition,
-        verticalHeight: movingToken.verticalHeight
+        verticalHeight: movingToken.verticalHeight,
+        isBlockingObstacle: movingToken.isBlockingObstacle
       });
 
       // Check for collisions
@@ -381,7 +379,7 @@ export class MovementValidator {
             });
             continue;
           }
-          
+
           if (!blockerIds.has(blocker.id)) {
             blockerIds.add(blocker.id);
             allBlockers.push(blocker);

@@ -1,6 +1,6 @@
 {
   "name": "maleficar-manoeuvres",
-  "version": "1.12.2",
+  "version": "1.13.0",
   "description": "A Foundry VTT module for token manoeuvres and movement systems",
   "main": "dist/index.js",
   "type": "module",
