@@ -34,6 +34,10 @@
         "hint": "Chuck this down to suss out how far you can leg it. Release and she's gone."
       }
     },
+    "meleeWeaponRangeOverride": {
+      "name": "Melee Weapon Range Override",
+      "hint": "When your weapon's reach is bang on the \"grid\" distance, swap it for this value instead."
+    },
     "notifications": {
       "moduleInitialised": "Maleficar Manoeuvres is good to go, legend!",
       "settingChanged": "Setting '{setting}' sorted to: {value}",

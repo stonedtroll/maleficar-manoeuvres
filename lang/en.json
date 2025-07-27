@@ -34,6 +34,10 @@
         "hint": "Shows overlays while held. Release to hide."
       }
     },
+    "meleeWeaponRangeOverride": {
+      "name": "Melee Weapon Range Override",
+      "hint": "Override a weapon's range when it exactly matches the \"grid\" scale distance."
+    },
     "notifications": {
       "moduleInitialised": "Maleficar Manoeuvres initialised successfully",
       "settingChanged": "Setting '{setting}' updated to: {value}",

@@ -7,11 +7,11 @@ import { LogLevel, LoggerFactory } from '../lib/log4foundry/log4foundry.js';
 export function getLogLevelChoices(): Record<string, string> {
   return {
     debug: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.debug`),
-    info:  game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.info`),
-    warn:  game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.warn`),
+    info: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.info`),
+    warn: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.warn`),
     error: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.error`),
     fatal: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.fatal`),
-    none:  game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.none`)
+    none: game.i18n.localize(`${MODULE_ID}.settings.logLevel.choices.none`)
   };
 }
 
@@ -94,6 +94,15 @@ export function registerSettings(): void {
       default: 1.8
     });
 
+    game.settings.register(MODULE_ID, SETTINGS.MELEE_WEAPON_RANGE_OVERRIDE, {
+      name: game.i18n.localize(`${MODULE_ID}.settings.meleeWeaponRangeOverride.name`),
+      hint: game.i18n.localize(`${MODULE_ID}.settings.meleeWeaponRangeOverride.hint`),
+      scope: 'world',
+      config: true,
+      type: Number,
+      default: 0
+    });
+
     const successMessage = game.i18n.localize(`${MODULE_ID}.notifications.moduleInitialised`);
     console.log(`[${MODULE_ID}] ${successMessage}`);
 
@@ -120,14 +129,14 @@ export function getSetting<T>(settingKey: string): T {
 export async function setSetting<T>(settingKey: string, value: T): Promise<void> {
   try {
     await game.settings.set(MODULE_ID, settingKey, value);
-    const message = game.i18n.format(`${MODULE_ID}.notifications.settingChanged`, { 
-      setting: settingKey, 
-      value: String(value) 
+    const message = game.i18n.format(`${MODULE_ID}.notifications.settingChanged`, {
+      setting: settingKey,
+      value: String(value)
     });
     console.log(`[${MODULE_ID}] ${message}`);
   } catch (error) {
-    const errorMessage = game.i18n.format(`${MODULE_ID}.notifications.settingFailed`, { 
-      setting: settingKey 
+    const errorMessage = game.i18n.format(`${MODULE_ID}.notifications.settingFailed`, {
+      setting: settingKey
     });
     console.error(`[${MODULE_ID}] ${errorMessage}:`, error);
     throw error;
@@ -142,6 +151,7 @@ function getDefaultSettingValue(settingKey: string): unknown {
     [SETTINGS.LOG_LEVEL]: 'info',
     [SETTINGS.TOKEN_BORDER_INDICATOR]: true,
     [SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT]: 0,
+    [SETTINGS.MELEE_WEAPON_RANGE_OVERRIDE]: 0,
   };
 
   return defaults[settingKey] ?? null;

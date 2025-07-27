@@ -1,5 +1,5 @@
 export interface WeaponRange {
-    melee?: number;
+    melee?: { min: number; max: number };
     minimum?: number;
     effective?: { min: number; max: number };
     maximum?: number;
@@ -41,23 +41,32 @@ export class Weapon {
     }
 
     isWithinRange(distance: number): boolean {
-        if (distance <= 0) return true;
+        const roundedDistance = Math.round(distance * 10) / 10;
+
+        if (roundedDistance <= 0) return true;
 
         const maxRange = Math.max(
-            this._range.melee ?? 0,
+            this._range.melee?.max ?? 0,
             this._range.effective?.max ?? 0,
             this._range.maximum ?? 0
         );
 
-        return distance <= maxRange && distance >= (this._range.minimum ?? 0);
+        return (
+            roundedDistance <= maxRange && roundedDistance >= (this._range.minimum ?? 0)
+        );
     }
 
     isWithinEffectiveRange(distance: number): boolean {
-        if (distance <= 0 && distance >= (this._range.minimum ?? 0)) return true;
+        const roundedDistance = Math.round(distance * 10) / 10;
+
+        if (roundedDistance <= 0 && roundedDistance >= (this._range.minimum ?? 0))
+            return true;
 
         const effectiveRange = this._range.effective;
         if (!effectiveRange) return false;
 
-        return distance >= effectiveRange.min && distance <= effectiveRange.max;
+        return (
+            roundedDistance >= effectiveRange.min && roundedDistance <= effectiveRange.max
+        );
     }
 }

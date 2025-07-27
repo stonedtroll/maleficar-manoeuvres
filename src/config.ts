@@ -3,9 +3,10 @@ export const MODULE_NAME = 'Maleficar Manoeuvres';
 export const MODULE_ABBR = 'MM';
 
 export const SETTINGS = {
-  LOG_LEVEL: 'logLevel',
-  TOKEN_BORDER_INDICATOR: 'tokenBorderIndicator',
-  TOKEN_DEFAULT_VERTICAL_HEIGHT: 'tokenDefaultVerticalHeight'
+  LOG_LEVEL: 'log-level',
+  TOKEN_BORDER_INDICATOR: 'token-border-indicator',
+  TOKEN_DEFAULT_VERTICAL_HEIGHT: 'token-default-vertical-height',
+  MELEE_WEAPON_RANGE_OVERRIDE: 'melee-weapon-range-override'
 } as const;
 
 export const LOG_LEVEL_CHOICES = {
