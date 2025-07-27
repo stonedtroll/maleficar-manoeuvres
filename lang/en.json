@@ -20,13 +20,18 @@
       "tokenDefaultVerticalHeight": {
         "name": "Default Token Height",
         "hint": "Default vertical height of a human‑sized creature."
-
       }
     },
     "tokenSheet": {
       "verticalHeight": {
         "label": "Vertical Height",
         "hint": "The token's height from base to top, in scene units ({units})."
+      }
+    },
+    "keybindings": {
+      "toggleOverlay": {
+        "name": "Toggle Movement Overlays",
+        "hint": "Shows overlays while held. Release to hide."
       }
     },
     "notifications": {

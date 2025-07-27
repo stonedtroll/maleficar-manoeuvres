@@ -32,7 +32,7 @@ export interface SnapResult {
  */
 const SNAP_CONFIG = {
   /** Maximum iterations for binary search */
-  BINARY_SEARCH_ITERATIONS: 30,
+  BINARY_SEARCH_ITERATIONS: 50,
   /** Minimum movement distance threshold */
   MIN_MOVEMENT_DISTANCE: 0.001,
   /** Small offset to ensure no overlap after snapping */

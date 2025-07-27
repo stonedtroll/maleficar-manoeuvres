@@ -5,6 +5,7 @@
 import type { ManoeuvreApplication } from './application/ManoeuvreApplication.js';
 import type { OverlayRegistry } from './application/registries/OverlayRegistry.js';
 import type { EventBus } from './infrastructure/events/EventBus.js';
+import type { KeyboardHandler } from './infrastructure/input/KeyboardHandler.js';
 
 import { MODULE_ID, SETTINGS } from './config.js';
 import { DIContainer } from './infrastructure/di/DIContainer.js';
@@ -58,6 +59,14 @@ async function initialiseModule(): Promise<void> {
   try {
     await moduleState.container.initialise();
     moduleState.isInitialised = true;
+    
+    const keyboardHandler = moduleState.container.get<KeyboardHandler>('keyboardHandler');
+    if (keyboardHandler) {
+      keyboardHandler.registerKeybindings();
+      moduleState.logger.debug('Keybindings registered during init');
+    } else {
+      moduleState.logger.warn('KeyboardHandler not available for keybinding registration');
+    }
     
     moduleState.logger.info('Module initialisation complete');
     moduleState.logger.info(`Log level set to: ${LogLevel[logLevel]}`);

@@ -28,6 +28,12 @@
         "hint": "How tall your token is from bottom to top, in scene units ({units})."
       }
     },
+    "keybindings": {
+      "toggleOverlay": {
+        "name": "Toggle Movement Overlays",
+        "hint": "Chuck this down to suss out how far you can leg it. Release and she's gone."
+      }
+    },
     "notifications": {
       "moduleInitialised": "Maleficar Manoeuvres is good to go, legend!",
       "settingChanged": "Setting '{setting}' sorted to: {value}",
