@@ -31,7 +31,7 @@ To follow the module’s development, you can read the series here: https://hash
 - **Obstacle Indicator**: While dragging, highlight the first token that would obstruct movement in real time.
 
 <p align=center>
-    <img width="256" height="256" alt="obstacle-indicator" src="https://github.com/user-attachments/assets/da71d0d1-5990-4387-b5f1-94e840ca3a4f" />
+    <img width="256" height="256" alt="Obstacle Indicator" src="assets/images/documentation/obstacle-indicator.png" />
 </p>
 
 - **Actor Info**: Displays each actor’s movement speed, providing at‑a‑glance speed information during play.
@@ -45,7 +45,7 @@ To follow the module’s development, you can read the series here: https://hash
     - Visually distinguishes when a token falls within the source token weapon’s effective range or overall range.
 
 <p align=center>
-    <img width="1072" height="386" alt="Untitled" src="https://github.com/user-attachments/assets/fdf646e7-5d1d-41d5-8d9c-61a90f028c3e" />
+    <img width="1072" height="386" alt="Range Finder" src="assets/images/documentation/rangefinder.png" />
 </p>
   
 When a token is being dragged, its boundary is attached to the preview token.
