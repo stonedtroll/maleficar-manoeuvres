@@ -62,14 +62,13 @@
     "tsBuildInfoFile": "./.tsbuildinfo" /* Cache file */
   },
   "include": [
-    "src/**/*",
-    "src/**/*.svelte", /* Include Svelte files */
-    "src/types/foundry.d.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "assets/images/documentation/**/*"
   ]
 }

@@ -3,8 +3,8 @@ import { resolve } from 'path';
 import fs from 'fs';
 import path from 'path';
 
-// Function to copy directory recursively
-function copyDir(src, dest) {
+// Function to copy directory recursively with exclusions
+function copyDir(src, dest, excludePaths = []) {
     if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
     }
@@ -15,8 +15,25 @@ function copyDir(src, dest) {
         const srcPath = path.join(src, entry.name);
         const destPath = path.join(dest, entry.name);
 
+        // Get the relative path from the original source directory
+        const rootSrc = src.split('assets')[0] + 'assets';
+        const relativePath = path.relative(rootSrc, srcPath).replace(/\\/g, '/');
+        
+        // Check if this path should be excluded
+        const shouldExclude = excludePaths.some(excludePath => {
+            const normalizedExcludePath = excludePath.replace(/\\/g, '/');
+            return relativePath.startsWith(normalizedExcludePath) || 
+                   relativePath === normalizedExcludePath;
+        });
+
+        if (shouldExclude) {
+            console.log(`Skipping excluded path: ${relativePath}`);
+            continue;
+        }
+
         if (entry.isDirectory()) {
-            copyDir(srcPath, destPath);
+            // Pass the exclude paths to recursive calls
+            copyDir(srcPath, destPath, excludePaths);
         } else {
             fs.copyFileSync(srcPath, destPath);
         }
@@ -58,13 +75,13 @@ const config = {
                     console.log('Styles directory copied to dist/styles');
                 }
 
-                // Copy assets folder (including your obstacle-indicator.webp)
+                // Copy assets folder (excluding documentation images)
                 const assetsDir = resolve('assets');
                 const destAssetsDir = resolve('dist', 'assets');
 
                 if (fs.existsSync(assetsDir)) {
-                    copyDir(assetsDir, destAssetsDir);
-                    console.log('Assets directory copied to dist/assets');
+                    copyDir(assetsDir, destAssetsDir, ['images/documentation']);
+                    console.log('Assets directory copied to dist/assets (excluding documentation)');
                 } else {
                     console.warn('⚠ Warning: assets directory not found');
                 }
