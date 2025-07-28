@@ -477,7 +477,7 @@ export class OverlayCoordinatorHelper {
             case 'token-info':
 
                 if (!sourceToken) {
-                    this.logger.warn('No controlled token found for token-info overlay');
+                    this.logger.debug('No controlled token found for token-info overlay');
                     return { isGM, userColour };
                 }
 

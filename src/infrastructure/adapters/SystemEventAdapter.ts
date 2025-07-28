@@ -403,7 +403,7 @@ export class SystemEventAdapter implements InitialisableService {
   private clearTokenBorder(token: Token): void {
     try {
       // Check if token border indicator is enabled in settings
-      const showTokenBorder = getSetting<boolean>(SETTINGS.TOKEN_BORDER_INDICATOR);
+      const showTokenBorder = getSetting<boolean>(SETTINGS.FOUNDRY_TOKEN_BORDER_INDICATOR);
 
       if (!showTokenBorder && token?.border) {
         token.border.clear();

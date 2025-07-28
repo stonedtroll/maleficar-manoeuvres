@@ -48,8 +48,8 @@ export function registerSettings(): void {
 
   try {
     game.settings.register(MODULE_ID, SETTINGS.LOG_LEVEL, {
-      name: game.i18n.localize(`${MODULE_ID}.settings.logLevel.name`),
-      hint: game.i18n.localize(`${MODULE_ID}.settings.logLevel.hint`),
+      name: (`${MODULE_ID}.settings.logLevel.name`),
+      hint: (`${MODULE_ID}.settings.logLevel.hint`),
       scope: 'client',
       config: true,
       type: String,
@@ -73,9 +73,9 @@ export function registerSettings(): void {
       }
     });
 
-    game.settings.register(MODULE_ID, SETTINGS.TOKEN_BORDER_INDICATOR, {
-      name: game.i18n.localize(`${MODULE_ID}.settings.tokenBorderIndicator.name`),
-      hint: game.i18n.localize(`${MODULE_ID}.settings.tokenBorderIndicator.hint`),
+    game.settings.register(MODULE_ID, SETTINGS.FOUNDRY_TOKEN_BORDER_INDICATOR, {
+      name: (`${MODULE_ID}.settings.foundryTokenBorderIndicator.name`),
+      hint: (`${MODULE_ID}.settings.foundryTokenBorderIndicator.hint`),
       scope: 'client',
       config: true,
       type: Boolean,
@@ -86,8 +86,8 @@ export function registerSettings(): void {
     });
 
     game.settings.register(MODULE_ID, SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT, {
-      name: game.i18n.localize(`${MODULE_ID}.settings.tokenDefaultVerticalHeight.name`),
-      hint: game.i18n.format(`${MODULE_ID}.settings.tokenDefaultVerticalHeight.hint`),
+      name: (`${MODULE_ID}.settings.tokenDefaultVerticalHeight.name`),
+      hint: (`${MODULE_ID}.settings.tokenDefaultVerticalHeight.hint`),
       scope: 'world',
       config: true,
       type: Number,
@@ -95,8 +95,8 @@ export function registerSettings(): void {
     });
 
     game.settings.register(MODULE_ID, SETTINGS.MELEE_WEAPON_RANGE_OVERRIDE, {
-      name: game.i18n.localize(`${MODULE_ID}.settings.meleeWeaponRangeOverride.name`),
-      hint: game.i18n.localize(`${MODULE_ID}.settings.meleeWeaponRangeOverride.hint`),
+      name: (`${MODULE_ID}.settings.meleeWeaponRangeOverride.name`),
+      hint: (`${MODULE_ID}.settings.meleeWeaponRangeOverride.hint`),
       scope: 'world',
       config: true,
       type: Number,
@@ -149,9 +149,8 @@ export async function setSetting<T>(settingKey: string, value: T): Promise<void>
 function getDefaultSettingValue(settingKey: string): unknown {
   const defaults: Record<string, unknown> = {
     [SETTINGS.LOG_LEVEL]: 'info',
-    [SETTINGS.TOKEN_BORDER_INDICATOR]: true,
+    [SETTINGS.FOUNDRY_TOKEN_BORDER_INDICATOR]: true,
     [SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT]: 0,
-    [SETTINGS.MELEE_WEAPON_RANGE_OVERRIDE]: 0,
   };
 
   return defaults[settingKey] ?? null;

@@ -19,21 +19,30 @@ import { ActorInfoContextBuilder } from '../coordinators/contextBuilders/ActorIn
 import { TokenInfoContextBuilder } from '../coordinators/contextBuilders/TokenInfoContextBuilder.js';
 
 export class OverlayContextBuilderRegistry {
+    private readonly builders = new Map<string, OverlayContextBuilder>();
     private readonly logger: FoundryLogger;
-    private readonly builders: Map<string, OverlayContextBuilder>;
+    private isInitialised = false;
 
     /**
      * Creates a new overlay context builder registry.
-     * Automatically registers all default context builders.
+     * Default builders are registered on first access.
      */
     constructor() {
         this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.OverlayContextBuilderRegistry`);
-        this.builders = new Map<string, OverlayContextBuilder>();
-        
-        this.initialise();
     }
 
     // Public API
+
+    /**
+     * Ensures the registry is initialised with default builders.
+     * This is called automatically on first access.
+     */
+    private ensureInitialised(): void {
+        if (!this.isInitialised) {
+            this.registerDefaultBuilders();
+            this.isInitialised = true;
+        }
+    }
 
     /**
      * Registers a context builder for a specific overlay type.
@@ -67,10 +76,14 @@ export class OverlayContextBuilderRegistry {
      * Retrieves a context builder by its overlay type identifier.
      */
     get(id: string): OverlayContextBuilder | undefined {
+        this.ensureInitialised();
+        
         const builder = this.builders.get(id);
         
         if (!builder) {
-            this.logger.debug(`No context builder found for '${id}'`);
+            this.logger.debug(`No context builder found for '${id}'`, {
+                availableBuilders: Array.from(this.builders.keys())
+            });
         }
         
         return builder;
@@ -80,6 +93,7 @@ export class OverlayContextBuilderRegistry {
      * Checks if a context builder is registered for the given overlay type.
      */
     has(id: string): boolean {
+        this.ensureInitialised();
         return this.builders.has(id);
     }
 
@@ -102,6 +116,7 @@ export class OverlayContextBuilderRegistry {
      * Returns a defensive copy to prevent external modification of the registry.
      */
     getAll(): Map<string, OverlayContextBuilder> {
+        this.ensureInitialised();
         return new Map(this.builders);
     }
 
@@ -109,6 +124,7 @@ export class OverlayContextBuilderRegistry {
      * Gets the identifiers of all registered context builders.
      */
     getRegisteredIds(): string[] {
+        this.ensureInitialised();
         return Array.from(this.builders.keys());
     }
 
@@ -116,6 +132,7 @@ export class OverlayContextBuilderRegistry {
      * Gets the count of registered context builders.
      */
     size(): number {
+        this.ensureInitialised();
         return this.builders.size;
     }
 
@@ -127,6 +144,7 @@ export class OverlayContextBuilderRegistry {
     clear(): void {
         const count = this.builders.size;
         this.builders.clear();
+        this.isInitialised = false;
         
         this.logger.warn('All context builders cleared', { 
             removedCount: count 
@@ -140,20 +158,12 @@ export class OverlayContextBuilderRegistry {
      */
     reset(): void {
         this.clear();
-        this.registerDefaultBuilders();
+        this.ensureInitialised();
         
         this.logger.info('Registry reset to default state');
     }
 
     // Private Methods
-
-    /**
-     * Initialises the registry with default configuration.
-     */
-    private initialise(): void {
-        this.logger.debug('Initialising overlay context builder registry');
-        this.registerDefaultBuilders();
-    }
 
     /**
      * Registers all default context builders.
@@ -162,21 +172,18 @@ export class OverlayContextBuilderRegistry {
      * Custom overlays should register their builders separately.
      */
     private registerDefaultBuilders(): void {
-        // Register token boundary builder
-        this.register('token-boundary', new TokenBoundaryContextBuilder());
-        
-        // Register facing arc builder
-        this.register('facing-arc', new FacingArcContextBuilder());
-        
-        // Register obstacle indicator builder
-        this.register('obstacle-indicator', new ObstacleIndicatorContextBuilder());
-        
-        // Register actor information builder
-        this.register('actor-info', new ActorInfoContextBuilder());
+        const defaultBuilders: Array<{ id: string; builder: OverlayContextBuilder }> = [
+            { id: 'token-boundary', builder: new TokenBoundaryContextBuilder() },
+            { id: 'facing-arc', builder: new FacingArcContextBuilder() },
+            { id: 'obstacle-indicator', builder: new ObstacleIndicatorContextBuilder() },
+            { id: 'actor-info', builder: new ActorInfoContextBuilder() },
+            { id: 'token-info', builder: new TokenInfoContextBuilder() }
+        ];
 
-        // Register token information builder
-        this.register('token-info', new TokenInfoContextBuilder());
+        for (const { id, builder } of defaultBuilders) {
+            this.builders.set(id, builder);
+        }
 
-        this.logger.info(`Default context builders registered: ${this.builders.size}`);
+        this.logger.info(`Default context builders registered: ${defaultBuilders.length}`);
     }
 }

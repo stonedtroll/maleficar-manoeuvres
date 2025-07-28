@@ -13,13 +13,17 @@
           "none": "None — Disable all logging"
         }
       },
-      "tokenBorderIndicator": {
-        "name": "Token Border Indicator",
+      "foundryTokenBorderIndicator": {
+        "name": "Foundry Token Border Indicator",
         "hint": "Foundry default outline around tokens."
       },
       "tokenDefaultVerticalHeight": {
         "name": "Default Token Height",
         "hint": "Default vertical height of a human‑sized creature."
+      },
+      "meleeWeaponRangeOverride": {
+        "name": "Melee Weapon Range Override",
+        "hint": "Override a weapon's range when it exactly matches the \"grid\" scale distance."
       }
     },
     "tokenSheet": {
@@ -33,10 +37,6 @@
         "name": "Toggle Movement Overlays",
         "hint": "Shows overlays while held. Release to hide."
       }
-    },
-    "meleeWeaponRangeOverride": {
-      "name": "Melee Weapon Range Override",
-      "hint": "Override a weapon's range when it exactly matches the \"grid\" scale distance."
     },
     "notifications": {
       "moduleInitialised": "Maleficar Manoeuvres initialised successfully",

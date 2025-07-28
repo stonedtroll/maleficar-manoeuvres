@@ -2,7 +2,7 @@
  * Maleficar Manoeuvres Module
  */
 
-import type { ManoeuvreApplication } from './application/ManoeuvreApplication.js';
+import type { MaleficarManoeuvreApplication } from './application/MaleficarManoeuvreApplication.js';
 import type { OverlayRegistry } from './application/registries/OverlayRegistry.js';
 import type { EventBus } from './infrastructure/events/EventBus.js';
 import type { KeyboardHandler } from './infrastructure/input/KeyboardHandler.js';
@@ -15,7 +15,7 @@ import { LogLevel, LoggerFactory, type FoundryLogger } from '../lib/log4foundry/
 const moduleState = {
   logger: null as FoundryLogger | null,
   container: null as DIContainer | null,
-  application: null as ManoeuvreApplication | null,
+  application: null as MaleficarManoeuvreApplication | null,
   isInitialised: false,
   isReady: false
 };
@@ -134,8 +134,8 @@ async function teardownModule(): Promise<void> {
     }
     
     // Clean up debug objects
-    if ((window as any).maleficarDebug) {
-      delete (window as any).maleficarDebug;
+    if ((window as any).maleficarManoeuvresDebug) {
+      delete (window as any).maleficarManoeuvresDebug;
     }
     
     // Reset state
@@ -214,7 +214,7 @@ function enableDebugMode(): void {
     const overlayRegistry = moduleState.container.get<OverlayRegistry>('overlayRegistry');
     const eventBus = moduleState.container.get<EventBus>('eventBus');
 
-    (window as any).maleficarDebug = {
+    (window as any).maleficarManoeuvresDebug = {
       // Core module components
       logger: () => moduleState.logger,
       container: () => moduleState.container,
@@ -244,12 +244,12 @@ function enableDebugMode(): void {
     };
 
     console.log(`${MODULE_ID} | Debug mode enabled`);
-    console.log('  Access debug tools via: window.maleficarDebug');
+    console.log('  Access debug tools via: window.maleficarManoeuvresDebug');
     console.log('  Available commands:');
-    console.log('    - maleficarDebug.getAPI()');
-    console.log('    - maleficarDebug.listOverlays()');
-    console.log('    - maleficarDebug.getStats()');
-    console.log('    - maleficarDebug.reinitialise()');
+    console.log('    - maleficarManoeuvresDebug.getAPI()');
+    console.log('    - maleficarManoeuvresDebug.listOverlays()');
+    console.log('    - maleficarManoeuvresDebug.getStats()');
+    console.log('    - maleficarManoeuvresDebug.reinitialise()');
     
   } catch (error) {
     if (moduleState.logger) {

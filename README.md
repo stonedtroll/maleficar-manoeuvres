@@ -53,7 +53,7 @@ When a token is being dragged, its boundary is attached to the preview token.
 ### Configuration
 - **Token Height**: Can now be set per‑token or globally in the module settings. If a token’s height is left blank, the default value is used with multipliers based on creature size and type. This height is factored into rangefinding, cover determination, and collision detection.
 - **Keybinding**: The Toggle Overlay action now uses Foundry’s keybinding system.
-- **Melee Weapon Range Override**: Overrides a weapon’s default range when it exactly equals the grid scale. Since distance is measured edge‑to‑edge, set this to 0 to require tokens to touch for melee attacks.
+- **Melee Weapon Range Override**: Overrides a weapon’s default range when it exactly equals the grid scale distance. Since distance is measured edge‑to‑edge, set this to 0 to require tokens to touch for melee attacks.
 
 ## Usage
 - Hold 'm' to display token boundaries and facing arcs.

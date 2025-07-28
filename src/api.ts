@@ -6,19 +6,17 @@
 import { MODULE_ID } from './config.js';
 import { Vector2 } from './domain/value-objects/Vector2.js';
 import { createFoundryLogger, type FoundryLogger } from '../lib/log4foundry/log4foundry.js';
-import type { ManoeuvreApplication } from './application/ManoeuvreApplication.js';
+import type { MaleficarManoeuvreApplication } from './application/MaleficarManoeuvreApplication.js';
 import type { EventBus } from './infrastructure/events/EventBus.js';
 import type { OverlayRegistry } from './application/registries/OverlayRegistry.js';
 import type { OverlayDefinition } from './domain/interfaces/OverlayDefinition.js';
-import type { OverlayPermissionCoordinator } from './application/coordinators/OverlayPermissionCoordinator.js';
 
 const logger: FoundryLogger = createFoundryLogger(`${MODULE_ID}.API`);
 
 export interface MaleficarManoeuvresAPI {
-  application: ManoeuvreApplication;
+  application: MaleficarManoeuvreApplication;
   eventBus: EventBus;
   overlayRegistry: OverlayRegistry;
-  overlayPermissionCoordinator: OverlayPermissionCoordinator;
   
   // Utility methods
   moveToken(tokenId: string, position: { x: number, y: number }): Promise<boolean>;
@@ -37,10 +35,9 @@ export interface MaleficarManoeuvresAPI {
  * Register the module API for external access
  */
 export function registerAPI(components: {
-  application: ManoeuvreApplication;
+  application: MaleficarManoeuvreApplication;
   eventBus: EventBus;
   overlayRegistry: OverlayRegistry;
-  overlayPermissionCoordinator: OverlayPermissionCoordinator;
 }): void {
   logger.debug('Registering API with components', { components: Object.keys(components) });
   

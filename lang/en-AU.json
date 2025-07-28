@@ -13,13 +13,17 @@
           "none": "None — She'll be right, no logging"
         }
       },
-      "tokenBorderIndicator": {
-        "name": "Token Border Indicator",
+      "foundryTokenBorderIndicator": {
+        "name": "Foundry Token Border Indicator",
         "hint": "Foundry's default outline around your tokens, cobber."
       },
       "tokenDefaultVerticalHeight": {
         "name": "Default Token Height",
         "hint": "Default vertical height of a human‑sized creature."
+      },
+      "meleeWeaponRangeOverride": {
+        "name": "Melee Weapon Range Override",
+        "hint": "When your weapon's reach is bang on the \"grid\" distance, swap it for this value instead."
       }
     },
     "tokenSheet": {
@@ -33,10 +37,6 @@
         "name": "Toggle Movement Overlays",
         "hint": "Chuck this down to suss out how far you can leg it. Release and she's gone."
       }
-    },
-    "meleeWeaponRangeOverride": {
-      "name": "Melee Weapon Range Override",
-      "hint": "When your weapon's reach is bang on the \"grid\" distance, swap it for this value instead."
     },
     "notifications": {
       "moduleInitialised": "Maleficar Manoeuvres is good to go, legend!",

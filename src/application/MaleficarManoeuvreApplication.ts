@@ -16,7 +16,7 @@ import { ObstacleIndicatorDefinition } from '../infrastructure/overlays/definiti
 import { ActorInfoDefinition } from '../infrastructure/overlays/definitions/ActorInfoDefinition.js';
 import { TokenInfoDefinition } from '../infrastructure/overlays/definitions/TokenInfoDefinition.js';
 
-export class ManoeuvreApplication {
+export class MaleficarManoeuvreApplication {
   private readonly logger: FoundryLogger;
   private initialised = false;
 

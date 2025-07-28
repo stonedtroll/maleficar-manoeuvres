@@ -7,8 +7,8 @@ export class OverlayContainer extends PIXI.Container {
     super();
     
     // Set the name for easier debugging
-    this.name = 'MaleficarOverlays';
-    
+    this.name = 'MaleficarManoeuvresOverlays';
+
     // Ensure the container doesn't interfere with positioning
     this.position.set(0, 0);
     this.scale.set(1, 1);

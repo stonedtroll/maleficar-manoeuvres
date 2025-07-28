@@ -16,7 +16,7 @@ import { OverlayRenderingService } from '../../presentation/services/OverlayRend
 import { TokenMovementCoordinator } from '../../application/coordinators/TokenMovementCoordinator.js';
 import { TokenDragCoordinator } from '../../application/coordinators/TokenDragCoordinator.js';
 import { KeyboardCoordinator } from '../../application/coordinators/KeyboardCoordinator.js';
-import { ManoeuvreApplication } from '../../application/ManoeuvreApplication.js';
+import { MaleficarManoeuvreApplication } from '../../application/MaleficarManoeuvreApplication.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 import { SystemEventAdapter } from '../adapters/SystemEventAdapter.js';
@@ -185,8 +185,8 @@ export class DIContainer {
   /**
    * Create the main application instance
    */
-  createApplication(): ManoeuvreApplication {
-    return new ManoeuvreApplication(
+  createApplication(): MaleficarManoeuvreApplication {
+    return new MaleficarManoeuvreApplication(
       this.get<EventBus>('eventBus'),
       this.get<OverlayRegistry>('overlayRegistry')
     );

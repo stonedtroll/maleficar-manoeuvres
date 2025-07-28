@@ -4,7 +4,7 @@ export const MODULE_ABBR = 'MM';
 
 export const SETTINGS = {
   LOG_LEVEL: 'log-level',
-  TOKEN_BORDER_INDICATOR: 'token-border-indicator',
+  FOUNDRY_TOKEN_BORDER_INDICATOR: 'foundry-token-border-indicator',
   TOKEN_DEFAULT_VERTICAL_HEIGHT: 'token-default-vertical-height',
   MELEE_WEAPON_RANGE_OVERRIDE: 'melee-weapon-range-override'
 } as const;

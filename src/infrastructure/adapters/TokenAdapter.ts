@@ -98,7 +98,6 @@ export class TokenAdapter extends AbstractTokenAdapter {
     }
 
     get isBlockingObstacle(): boolean {
-        console.log(`TokenAdapter.isBlockingObstacle called for token ${this.token.name}: ${!this.isSwarm}`);
         return !this.isSwarm;
     }
 }
