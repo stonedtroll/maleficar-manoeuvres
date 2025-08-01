@@ -62,6 +62,7 @@ When a token is being dragged, its boundary is attached to the preview token.
 - By default, selection and hover borders are turned off, but you can enable them again in the Settings menu.
 
 ## Suggested Module
+- Shadows & Secrets: https://github.com/stonedtroll/shadows-and-secrets
 - Enhances token vision detection and assists in identifying which tokens should display an overlay: https://github.com/dev7355608/vision-5e
 
 ## Attribution
