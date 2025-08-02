@@ -9,8 +9,6 @@ import type { Actor } from '../../../domain/entities/Actor.js';
 import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
 interface ActorInfoContextOptions {
-  isGM?: boolean;
-  userColour?: string;
   ownedByCurrentUserActors: Actor[];
 }
 
@@ -104,10 +102,6 @@ export class ActorInfoContextBuilder implements OverlayContextBuilder<ActorInfoC
       actorInfo: {
         speeds: speeds,
         weaponRanges: weaponRanges
-      },
-      user: {
-        isGM: options.isGM ?? false,
-        colour: options.userColour ?? '#FFFFFF'
       }
     };
   }

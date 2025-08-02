@@ -103,6 +103,22 @@ export function registerSettings(): void {
       default: 0
     });
 
+    game.settings.register(MODULE_ID, SETTINGS.MOVEMENT_VALIDATION, {
+      name: `${MODULE_ID}.settings.movementValidation.name`,
+      hint: `${MODULE_ID}.settings.movementValidation.hint`,
+      scope: 'world',
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: (value: boolean) => {
+        const message = value 
+          ? game.i18n.localize(`${MODULE_ID}.notifications.movementValidationEnabled`)
+          : game.i18n.localize(`${MODULE_ID}.notifications.movementValidationDisabled`);
+        ui.notifications?.info(message);
+        console.log(`[${MODULE_ID}] Movement validation ${value ? 'enabled' : 'disabled'}`);
+      }
+    });
+
     const successMessage = game.i18n.localize(`${MODULE_ID}.notifications.moduleInitialised`);
     console.log(`[${MODULE_ID}] ${successMessage}`);
 
@@ -149,8 +165,10 @@ export async function setSetting<T>(settingKey: string, value: T): Promise<void>
 function getDefaultSettingValue(settingKey: string): unknown {
   const defaults: Record<string, unknown> = {
     [SETTINGS.LOG_LEVEL]: 'info',
-    [SETTINGS.FOUNDRY_TOKEN_BORDER_INDICATOR]: true,
-    [SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT]: 0,
+    [SETTINGS.FOUNDRY_TOKEN_BORDER_INDICATOR]: false,
+    [SETTINGS.TOKEN_DEFAULT_VERTICAL_HEIGHT]: 1.8,
+    [SETTINGS.MELEE_WEAPON_RANGE_OVERRIDE]: 0,
+    [SETTINGS.MOVEMENT_VALIDATION]: true
   };
 
   return defaults[settingKey] ?? null;

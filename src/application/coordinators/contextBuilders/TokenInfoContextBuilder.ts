@@ -6,8 +6,6 @@ import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefini
 import { MODULE_ID } from '../../../config.js';
 
 interface TokenInfoContextOptions {
-    isGM?: boolean;
-    userColour?: string;
     range?: number;
     rangeUnit?: string;
     rangeBackgroundColour?: string;
@@ -28,7 +26,7 @@ export class TokenInfoContextBuilder implements OverlayContextBuilder<TokenInfoC
             : null;
 
         let styling = overlayDefinition.styling;
-        
+
         if (overlayDefinition.styling?.range && options.rangeBackgroundColour !== undefined) {
             // Create a new range object with all existing properties plus the background colour
             const updatedRange = {
@@ -36,7 +34,7 @@ export class TokenInfoContextBuilder implements OverlayContextBuilder<TokenInfoC
                 backgroundColour: options.rangeBackgroundColour,
                 backgroundOpacity: 0.6
             };
-            
+
             styling = {
                 ...overlayDefinition.styling,
                 range: updatedRange
@@ -72,10 +70,6 @@ export class TokenInfoContextBuilder implements OverlayContextBuilder<TokenInfoC
             tokenInfo: {
                 rangeIcon: `modules/${MODULE_ID}/assets/images/icons/range.webp`,
                 range: displayRange,
-            },
-            user: {
-                isGM: options.isGM ?? false,
-                colour: options.userColour ?? '#FFFFFF'
             }
         };
     }

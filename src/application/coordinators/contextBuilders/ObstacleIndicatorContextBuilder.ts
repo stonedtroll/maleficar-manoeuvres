@@ -5,10 +5,7 @@ import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefini
 
 import { MODULE_ID } from '../../../config.js';
 
-interface ObstacleIndicatorContextOptions {
-  isGM?: boolean;
-  userColour?: string;
-}
+interface ObstacleIndicatorContextOptions {}
 
 /**
  * Context builder for obstacle indicator overlays.
@@ -54,9 +51,6 @@ export class ObstacleIndicatorContextBuilder implements OverlayContextBuilder<Ob
         rotation: 0,
         blendMode: 'normal',
         maintainAspectRatio: true
-      },
-      user: {
-        isGM: options.isGM ?? false
       }
     };
   }

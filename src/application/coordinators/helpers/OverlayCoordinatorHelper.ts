@@ -17,6 +17,8 @@ import { LoggerFactory } from '../../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../../config.js';
 import { RangeFinderService } from '../../../domain/services/RangeFinderService.js';
 import { Weapon } from '../../../domain/value-objects/Weapon.js';
+import { TokenRepository } from '../../../infrastructure/repositories/TokenRepository.js';
+import { UserRepository } from '../../../infrastructure/repositories/UserRepository.js';
 
 export class OverlayCoordinatorHelper {
     private readonly logger: FoundryLogger;
@@ -39,16 +41,17 @@ export class OverlayCoordinatorHelper {
      */
     async processOverlaysByScope(
         overlays: OverlayDefinition[],
-        allTokens: Token[],
-        isGM: boolean,
-        userColour: string,
         contextBuilderRegistry: OverlayContextBuilderRegistry,
         triggerType?: keyof OverlayTriggers,
-        actors?: Actor[],
-        previewToken?: Token
+        dragTokenId?: string
     ): Promise<Array<{ targetTokens: Token[], overlays: OverlayDefinition[] }>> {
         const overlayGroups = this.groupOverlaysByTargetScope(overlays, triggerType);
         const processedGroups: Array<{ targetTokens: Token[], overlays: OverlayDefinition[] }> = [];
+        const tokenRepository = new TokenRepository();
+        const allTokens = tokenRepository.getAll();
+        const previewToken = dragTokenId
+            ? tokenRepository.getPreviewToken(dragTokenId)
+            : undefined;
 
         for (const [targetScope, scopeOverlays] of overlayGroups.entries()) {
             const targetTokens = this.getTargetTokens(
@@ -76,17 +79,13 @@ export class OverlayCoordinatorHelper {
             await this.requestOverlayRendering(
                 targetTokens,
                 preparedOverlays,
-                isGM,
-                (overlayId, targetToken, isGM) =>
+                (overlayId, targetToken) =>
                     this.buildContextForOverlay(
                         overlayId,
                         targetToken,
-                        isGM,
-                        userColour,
                         preparedOverlays,
                         contextBuilderRegistry,
-                        sourceToken,
-                        actors
+                        sourceToken
                     )
             );
 
@@ -114,11 +113,6 @@ export class OverlayCoordinatorHelper {
             targetScope,
             previewToken,
         );
-
-        this.logger.debug('Tokens categorised for overlay rendering', {
-            targetCount: targetTokens.length,
-            targetingScope: targetScope
-        });
 
         return targetTokens;
     }
@@ -236,12 +230,9 @@ export class OverlayCoordinatorHelper {
     buildContextForOverlay(
         overlayId: string,
         targetToken: Token,
-        isGM: boolean,
-        userColour: string,
         overlaysWithBuilders: OverlayDefinition[],
         contextBuilderRegistry: OverlayContextBuilderRegistry,
-        sourceToken?: Token,
-        actors?: Actor[]
+        sourceToken?: Token
     ): OverlayRenderContext {
         const overlay = overlaysWithBuilders.find(o => o.id === overlayId);
 
@@ -258,11 +249,8 @@ export class OverlayCoordinatorHelper {
 
         const contextOptions = this.buildContextOptions(
             overlayId,
-            isGM,
-            userColour,
             targetToken,
-            sourceToken,
-            actors
+            sourceToken
         );
 
         return contextBuilder.buildContext(targetToken, overlay, contextOptions);
@@ -276,15 +264,13 @@ export class OverlayCoordinatorHelper {
     async requestOverlayRendering(
         targetTokens: Token[],
         matchingOverlays: OverlayDefinition[],
-        isGM: boolean,
-        contextBuilder: (overlayId: string, token: Token, isGM: boolean) => OverlayRenderContext
+        contextBuilder: (overlayId: string, token: Token) => OverlayRenderContext
     ): Promise<void> {
         // Process each target token
         for (const targetToken of targetTokens) {
             await this.renderOverlaysOnToken(
                 targetToken,
                 matchingOverlays,
-                isGM,
                 contextBuilder
             );
         }
@@ -319,15 +305,6 @@ export class OverlayCoordinatorHelper {
             groups.get(scope)!.push(overlay);
         }
 
-        this.logger.debug('Overlays grouped by scope', {
-            triggerType,
-            groups: Array.from(groups.entries()).map(([scope, overlays]) => ({
-                scope,
-                overlayIds: overlays.map(o => o.id),
-                count: overlays.length
-            }))
-        });
-
         return groups;
     }
 
@@ -341,12 +318,6 @@ export class OverlayCoordinatorHelper {
         targetScope: TargetScope,
         previewToken?: Token
     ): Token[] {
-        this.logger.debug('Determining target tokens', {
-            scope: targetScope,
-            totalTokens: allTokens.length,
-            hasPreview: !!previewToken
-        });
-
         let filteredTokens: Token[];
 
         switch (targetScope) {
@@ -390,12 +361,6 @@ export class OverlayCoordinatorHelper {
                 filteredTokens = allTokens.filter(token => token.visible);
         }
 
-        this.logger.debug('Tokens filtered by scope', {
-            scope: targetScope,
-            originalCount: allTokens.length,
-            filteredCount: filteredTokens.length
-        });
-
         return filteredTokens;
     }
 
@@ -407,18 +372,10 @@ export class OverlayCoordinatorHelper {
     private async renderOverlaysOnToken(
         targetToken: Token,
         overlays: OverlayDefinition[],
-        isGM: boolean,
-        contextBuilder: (overlayId: string, token: Token, isGM: boolean) => OverlayRenderContext
+        contextBuilder: (overlayId: string, token: Token) => OverlayRenderContext
     ): Promise<void> {
         for (const overlay of overlays) {
-            const context = contextBuilder(overlay.id, targetToken, isGM);
-
-            this.logger.debug(`Rendering overlay ${overlay.id} on token ${targetToken.name}`, {
-                overlayId: overlay.id,
-                tokenId: targetToken.id,
-                tokenName: targetToken.name,
-                isGM
-            });
+            const context = contextBuilder(overlay.id, targetToken);
 
             this.overlayRenderer.renderTokenOverlay(context);
             this.trackRenderedOverlay(targetToken.id, overlay.id);
@@ -459,30 +416,38 @@ export class OverlayCoordinatorHelper {
      */
     private buildContextOptions(
         overlayId: string,
-        isGM: boolean,
-        userColour: string,
         targetToken: Token,
         sourceToken?: Token,
-        actors?: Actor[]
-    ): any {  // Using 'any' since different overlays have different option types
+    ): any {
 
 
         switch (overlayId) {
-            case 'actor-info':
+            case 'facing-arc':
+                const user = new UserRepository().getCurrentUser();
+
                 return {
-                    isGM,
-                    userColour,
-                    ownedByCurrentUserActors: actors ?? []
+                    isGM: user?.isGM,
+                    userColour: user?.colour
+                };
+            case 'actor-info':
+
+                const ownedByCurrentUserTokens = new TokenRepository().getOwnedByCurrentUser();
+                const ownedByCurrentUserActors = ownedByCurrentUserTokens
+                    .map(token => token.actor)
+                    .filter((actor): actor is Actor => actor !== null);
+
+                return {
+                    ownedByCurrentUserActors
                 };
             case 'token-info':
 
                 if (!sourceToken) {
                     this.logger.debug('No controlled token found for token-info overlay');
-                    return { isGM, userColour };
+                    return {};
                 }
 
                 const rangeResult = new RangeFinderService().distanceTo(sourceToken, targetToken);
-                const sourceActor = actors?.find(actor => actor.id === sourceToken.actorId);
+                const sourceActor = sourceToken.actor;
 
                 // Determine font colour based on weapon ranges
                 const rangeBackgroundColour = this.determineBackgroundColourByRange(
@@ -490,34 +455,20 @@ export class OverlayCoordinatorHelper {
                     rangeResult.distance
                 );
 
-                this.logger.debug('Calculated range for token-info overlay', {
-                    distance: rangeResult.distance,
-                    unit: rangeResult.unit,
-                    rangeBackgroundColour: rangeBackgroundColour,
-                    targetTokenName: targetToken.name,
-                    equippedWeapons: sourceActor?.equippedWeapons
-                });
-
                 return {
-                    isGM,
-                    userColour,
                     range: rangeResult.distance,
                     rangeUnit: rangeResult.unit,
                     rangeBackgroundColour: rangeBackgroundColour
                 };
             default:
-                // Return generic options for overlays that don't have specific requirements
-                return {
-                    isGM,
-                    userColour
-                };
+                return {};
         }
     }
 
     /**
     * Determines the font colour based on weapon ranges and distance.
     */
-    private determineBackgroundColourByRange(equippedWeapons: readonly Weapon[], distance: number): string | null{
+    private determineBackgroundColourByRange(equippedWeapons: readonly Weapon[], distance: number): string | null {
 
         if (equippedWeapons.length === 0) {
             return null;
@@ -536,9 +487,9 @@ export class OverlayCoordinatorHelper {
         );
 
         if (inRange) {
-            return '#134F5D'; 
+            return '#134F5D';
         }
 
-        return null; 
+        return null;
     }
 }

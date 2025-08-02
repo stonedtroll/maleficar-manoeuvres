@@ -10,7 +10,7 @@ import type { KeyboardHandler } from './infrastructure/input/KeyboardHandler.js'
 import { MODULE_ID, SETTINGS } from './config.js';
 import { DIContainer } from './infrastructure/di/DIContainer.js';
 import { registerSettings, getLogLevelFromString } from './settings.js';
-import { LogLevel, LoggerFactory, type FoundryLogger } from '../lib/log4foundry/log4foundry.js';
+import { LogLevel, LoggerFactory, SolarisedColours, type FoundryLogger } from '../lib/log4foundry/log4foundry.js';
 
 const moduleState = {
   logger: null as FoundryLogger | null,
@@ -178,6 +178,7 @@ function getConfiguredLogLevel(): LogLevel {
 function configureLogging(logLevel: LogLevel): FoundryLogger {
   const factory = LoggerFactory.getInstance();
   factory.setDefaultLevel(logLevel);
+  factory.setDefaultColour(SolarisedColours.YELLOW)
 
   return factory.getFoundryLogger(MODULE_ID, {
     level: logLevel,

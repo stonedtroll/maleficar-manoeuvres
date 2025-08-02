@@ -82,4 +82,24 @@ export class DnD5eActorAdapter extends AbstractActorAdapter {
 
     return weapons;
   }
+
+  get health(): number {
+    return this.actor.system.attributes.hp.value;
+  }
+
+  get maxHealth(): number {
+    return this.actor.system.attributes.hp.max;
+  }
+
+  get tempHealth(): number {
+    return this.actor.system.attributes.hp.temp;
+  }
+
+  get tempMaxHealth(): number {
+    return this.actor.system.attributes.hp.tempMax;
+  }
+
+  get healthPercentage(): number {
+    return this.actor.system.attributes.hp.pct;
+  }
 }

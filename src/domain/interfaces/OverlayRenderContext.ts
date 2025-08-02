@@ -121,7 +121,7 @@ interface UserInfo {
 
   id?: string;
   colour?: string;
-  isGM: boolean;
+  isGM?: boolean;
 }
 
 /**
@@ -165,7 +165,7 @@ export interface OverlayRenderContext {
   obstacle?: ObstacleContext;
   movement?: MovementContext;
   visibility?: VisibilityContext;
-  user: UserInfo;
+  user?: UserInfo;
   isPreview?: boolean;
   animate?: boolean;
   priority?: RenderPriority;

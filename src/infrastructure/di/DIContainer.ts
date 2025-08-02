@@ -26,6 +26,7 @@ import { Vector2 } from '../../domain/value-objects/Vector2.js';
 import { TokenMovementService } from '../services/TokenMovementService.js';
 import { OverlayContextBuilderRegistry } from '../../application/registries/OverlayContextBuilderRegistry.js';
 import { TokenSheetAdapter } from '../adapters/TokenSheetAdapter.js';
+import { TokenRepository } from '../repositories/TokenRepository.js';
 
 export class DIContainer {
   private readonly services = new Map<string, any>();
@@ -56,6 +57,9 @@ export class DIContainer {
       const tokenMovementService = new TokenMovementService(eventBus);
       const tokenSheetAdapter = new TokenSheetAdapter();
 
+      // Repositories
+      const tokenRepository = new TokenRepository();
+
       const sceneBounds = new AABB(
         new Vector2(0, 0), // min point
         new Vector2(canvas?.dimensions?.width ?? 5000, canvas?.dimensions?.height ?? 5000) // TODO: Write a canvas adapter
@@ -85,7 +89,8 @@ export class DIContainer {
         commandExecutor,
         movementValidator,
         snapCalculator,
-        eventBus
+        eventBus,
+        tokenRepository
       );
 
       const tokenDragCoordinator = new TokenDragCoordinator(
@@ -93,7 +98,8 @@ export class DIContainer {
         overlayRegistry,
         overlayContextBuilderRegistry,
         movementValidator,
-        eventBus
+        eventBus,
+        tokenRepository
       );
 
       const keyboardCoordinator = new KeyboardCoordinator(

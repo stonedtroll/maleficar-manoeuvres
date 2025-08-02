@@ -4,7 +4,7 @@ import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRender
 import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
-import { RenderingUtils } from '../utils/RenderingUtils.js';
+import { RenderingUtility } from '../utils/RenderingUtility.js';
 
 export class ActorInfoRenderer {
   private readonly logger: FoundryLogger;
@@ -15,7 +15,7 @@ export class ActorInfoRenderer {
   }
 
   render(graphics: PIXI.Graphics, context: OverlayRenderContext): void {
-    RenderingUtils.prepareGraphics(graphics);
+    RenderingUtility.prepareGraphics(graphics);
 
     if (!context.actorInfo) {
       this.logger.debug('No actor info provided in context');
@@ -75,16 +75,6 @@ export class ActorInfoRenderer {
     // Get the current movement mode from token
     const currentMovementMode = context.token.currentMovementMode;
 
-    this.logger.debug('Rendering actor info', {
-      speedCount: speeds?.length || 0,
-      weaponCount: weaponRanges?.length || 0,
-      styling: speedsStyle,
-      weaponRangesStyle,
-      effectiveRangeStyle,
-      currentMovementMode,
-      context: context
-    });
-
     // Update the allContainers to store container metadata
     interface ContainerMetadata {
       container: PIXI.Container;
@@ -103,15 +93,6 @@ export class ActorInfoRenderer {
     speeds?.forEach((speed, index) => {
       const container = new PIXI.Container();
 
-      // Debug: Log the comparison
-      this.logger.debug('Speed comparison', {
-        speedLabel: speed.label,
-        speedLabelLower: speed.label.toLowerCase(),
-        currentMovementMode: currentMovementMode,
-        currentMovementModeLower: currentMovementMode?.toLowerCase(),
-        willMatch: speed.label.toLowerCase() === currentMovementMode?.toLowerCase()
-      });
-
       // Check if this speed matches the current movement mode
       const isCurrentMode =
         speed.label.toLowerCase() === currentMovementMode?.toLowerCase() ||
@@ -119,8 +100,8 @@ export class ActorInfoRenderer {
         currentMovementMode?.toLowerCase().includes(speed.label.toLowerCase());
 
       // Build text style using context styling
-      const style = RenderingUtils.buildTextStyle(isCurrentMode && currentModeStyle ? currentModeStyle : speedsStyle);
-      const text = RenderingUtils.createOptimisedText(
+      const style = RenderingUtility.buildTextStyle(isCurrentMode && currentModeStyle ? currentModeStyle : speedsStyle);
+      const text = RenderingUtility.createOptimisedText(
         speed.label, 
         style, 
         isCurrentMode && currentModeStyle ? currentModeStyle.fontOpacity : speedsStyle.fontOpacity
@@ -139,7 +120,7 @@ export class ActorInfoRenderer {
           ? currentModeStyle.fontOpacity
           : speedsStyle.fontOpacity;
 
-        iconSprite = RenderingUtils.createIconSprite(speed.icon, speedIconSize, tintColour, alpha);
+        iconSprite = RenderingUtility.createIconSprite(speed.icon, speedIconSize, tintColour, alpha);
         iconSprite.anchor.set(0, 0.5); // Override default centre anchor
         iconSprite.position.x = 0;
 
@@ -166,15 +147,8 @@ export class ActorInfoRenderer {
         const bgColour = currentModeStyle.backgroundColour || '#3E352A';
         const bgOpacity = currentModeStyle.backgroundOpacity ?? 0.8;
 
-        this.logger.debug('Drawing background for current mode', {
-          mode: speed.label,
-          colour: currentModeStyle.backgroundColour,
-          transformedColour: bgColour,
-          opacity: bgOpacity
-        });
-
         // Draw rectangle with actual colour
-        RenderingUtils.drawBackground(
+        RenderingUtility.drawBackground(
           backgroundGraphics,
           -backgroundPadding.x,
           -bgHeight / 2,
@@ -228,8 +202,8 @@ export class ActorInfoRenderer {
       const rangeContainer = new PIXI.Container();
       
       // Create weapon name text
-      const nameStyle = RenderingUtils.buildTextStyle(weaponRangesStyle);
-      const nameText = RenderingUtils.createOptimisedText(weapon.name, nameStyle, weaponRangesStyle.fontOpacity);
+      const nameStyle = RenderingUtility.buildTextStyle(weaponRangesStyle);
+      const nameText = RenderingUtility.createOptimisedText(weapon.name, nameStyle, weaponRangesStyle.fontOpacity);
       nameText.anchor.set(0, 0.5);
       
       // Position icon and name
@@ -237,7 +211,7 @@ export class ActorInfoRenderer {
       if (weapon.icon) {
         iconContainer = new PIXI.Container();
         
-        const iconSprite = RenderingUtils.createIconSprite(
+        const iconSprite = RenderingUtility.createIconSprite(
           weapon.icon,
           weaponIconSize,
           weaponRangesStyle.fontColour,
@@ -270,7 +244,7 @@ export class ActorInfoRenderer {
           const border = new PIXI.Graphics();
           border.lineStyle(
             1, // Default border width
-            RenderingUtils.transformColour(iconBorderColour),
+            RenderingUtility.transformColour(iconBorderColour),
             1 // Full opacity
           );
           
@@ -292,14 +266,14 @@ export class ActorInfoRenderer {
       nameContainer.addChild(nameText);
       
       // Create range texts
-      const rangeStyle = RenderingUtils.buildTextStyle({
+      const rangeStyle = RenderingUtility.buildTextStyle({
         ...weaponRangesStyle
       });
       
       // Effective range with background
       const effectiveRangeContainer = new PIXI.Container();
-      const effectiveTextStyle = RenderingUtils.buildTextStyle(effectiveRangeStyle);
-      const effectiveText = RenderingUtils.createOptimisedText(
+      const effectiveTextStyle = RenderingUtility.buildTextStyle(effectiveRangeStyle);
+      const effectiveText = RenderingUtility.createOptimisedText(
         weapon.effectiveRange,
         effectiveTextStyle,
         effectiveRangeStyle.fontOpacity
@@ -312,7 +286,7 @@ export class ActorInfoRenderer {
       const effectiveBgWidth = effectiveText.width + effectivePadding.x;
       const effectiveBgHeight = effectiveText.height + effectivePadding.y;
       
-      RenderingUtils.drawBackground(
+      RenderingUtility.drawBackground(
         effectiveBg,
         -effectivePadding.x,
         -effectiveBgHeight / 2,
@@ -331,7 +305,7 @@ export class ActorInfoRenderer {
       
       if (weapon.range !== null) {
         rangeTextContainer = new PIXI.Container();
-        rangeText = RenderingUtils.createOptimisedText(weapon.range, rangeStyle, weaponRangesStyle.fontOpacity);
+        rangeText = RenderingUtility.createOptimisedText(weapon.range, rangeStyle, weaponRangesStyle.fontOpacity);
         rangeText.anchor.set(0, 0.5);
         
         // Draw background for range text if backgroundColour is specified
@@ -342,7 +316,7 @@ export class ActorInfoRenderer {
           const rangeBgWidth = rangeText.width + rangePadding.x;
           const rangeBgHeight = rangeText.height + rangePadding.y;
           
-          RenderingUtils.drawBackground(
+          RenderingUtility.drawBackground(
             rangeBg,
             -rangePadding.x,
             -rangeBgHeight / 2,
@@ -402,13 +376,6 @@ export class ActorInfoRenderer {
       if (index < weaponRanges.length - 1) {
         totalHeight += this.lineSpacing;
       }
-    });
-
-    this.logger.debug('Total height for all containers:', {
-      totalHeight: totalHeight,
-      containerCount: allContainers.length,
-      speedCount: speeds?.length || 0,
-      weaponCount: weaponRanges?.length || 0
     });
 
     // Position all containers

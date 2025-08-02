@@ -103,8 +103,7 @@ export interface TokenPreUpdateEvent {
 
 export interface TokenUpdateEvent {
   timestamp: number;
-  allTokenAdapters: AbstractTokenAdapter[];
-  updatingTokenAdapter: AbstractTokenAdapter;
+  updatingTokenId: string;
   changes: Partial<TokenState>;
   updateOptions: {
     animate: boolean;
@@ -118,12 +117,6 @@ export interface TokenUpdateEvent {
     };
     maleficarManoeuvresValidatedMove: boolean;
   };
-  user: {
-    id: string;
-    colour: string;
-    isGM: boolean;
-  };
-  isUnconstrainedMovement: boolean;
 }
 
 export interface TokenRefreshEvent {
@@ -143,37 +136,17 @@ export interface TokenDeleteEvent {
 // Token Drag Events
 export interface TokenDragStartEvent {
   timestamp: number;
-  allTokenAdapters: AbstractTokenAdapter[];
-  dragStartTokenAdaptor: AbstractTokenAdapter;
-  previewTokenAdapter: AbstractTokenAdapter;
-  ownedByCurrentUserActorAdapters: AbstractActorAdapter[];
-  user: {
-    id: string;
-    colour: string;
-    isGM: boolean;
-  }
+  dragTokenId: string;
 }
 
 export interface TokenDragMoveEvent {
   timestamp: number;
-  allTokenAdapters: AbstractTokenAdapter[];
-  dragStartTokenAdaptor: AbstractTokenAdapter;
-  previewTokenAdapter: AbstractTokenAdapter;
-  ownedByCurrentUserActorAdapters: AbstractActorAdapter[];
-  user: {
-    id: string;
-    colour: string;
-    isGM: boolean;
-  }
+  dragTokenId: string;
 }
 
 export interface TokenDragEndEvent {
-  id: string;
-  position: { x: number; y: number };
-  worldPosition: { x: number; y: number };
-  screenPosition: { x: number; y: number };
-  totalDelta: { x: number; y: number };
-  prevented: boolean;
+  timestamp: number;
+  dragTokenId: string;
 }
 
 export interface TokenDragCancelEvent {
@@ -256,13 +229,6 @@ export interface KeyboardKeyDownEvent {
     meta?: boolean;
   };
   timestamp: number;
-  allTokenAdapters: AbstractTokenAdapter[];
-  ownedByCurrentUserActorAdapters: AbstractActorAdapter[];
-  user: {
-    id: string;
-    colour: string;
-    isGM: boolean;
-  }
 }
 
 export interface KeyboardKeyUpEvent {
@@ -275,11 +241,6 @@ export interface KeyboardKeyUpEvent {
     meta?: boolean;
   };
   timestamp?: number;
-  user: {
-    id: string;
-    colour: string;
-    isGM: boolean;
-  }
 }
 
 export interface MovementValidationRequest {

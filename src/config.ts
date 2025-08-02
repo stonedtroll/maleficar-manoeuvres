@@ -3,10 +3,11 @@ export const MODULE_NAME = 'Maleficar Manoeuvres';
 export const MODULE_ABBR = 'MM';
 
 export const SETTINGS = {
-  LOG_LEVEL: 'log-level',
-  FOUNDRY_TOKEN_BORDER_INDICATOR: 'foundry-token-border-indicator',
-  TOKEN_DEFAULT_VERTICAL_HEIGHT: 'token-default-vertical-height',
-  MELEE_WEAPON_RANGE_OVERRIDE: 'melee-weapon-range-override'
+  LOG_LEVEL: 'logLevel',
+  FOUNDRY_TOKEN_BORDER_INDICATOR: 'foundryTokenBorderIndicator',
+  TOKEN_DEFAULT_VERTICAL_HEIGHT: 'tokenDefaultVerticalHeight',
+  MELEE_WEAPON_RANGE_OVERRIDE: 'meleeWeaponRangeOverride',
+  MOVEMENT_VALIDATION: 'movementValidation'
 } as const;
 
 export const LOG_LEVEL_CHOICES = {

@@ -6,7 +6,7 @@ import * as PIXI from 'pixi.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
 
-export class RenderingUtils {
+export class RenderingUtility {
     private static readonly logger: FoundryLogger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.RenderingUtils`);
 
     /**

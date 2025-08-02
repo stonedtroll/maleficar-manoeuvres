@@ -23,6 +23,8 @@ import { CommandExecutor } from '../commands/CommandExecutor.js';
 import { Vector3 } from '../../domain/value-objects/Vector3.js';
 import { SnapPositionCalculator } from '../../domain/services/SnapPositionCalculator.js';
 import { MoveResult } from '../types/MoveResult.js';
+import { TokenRepository } from '@/infrastructure/repositories/TokenRepository.js';
+import { MovementConfigurationService } from '../../domain/services/MovementConfigurationService.js';
 
 export class TokenMovementCoordinator {
   private readonly logger: FoundryLogger;
@@ -38,7 +40,8 @@ export class TokenMovementCoordinator {
     private readonly commandExecutor: CommandExecutor,
     private readonly movementValidator: MovementValidator,
     private readonly snapCalculator: SnapPositionCalculator,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
+    private readonly tokenRepository: TokenRepository
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.TokenMovementCoordinator`);
 
@@ -53,7 +56,10 @@ export class TokenMovementCoordinator {
    */
   async handleTokenUpdate(event: TokenUpdateEvent): Promise<void> {
     try {
-      if (event.isUnconstrainedMovement) {
+      if (!MovementConfigurationService.shouldValidateMovement()) {
+        this.logger.debug('Movement validation is bypassed', {
+          tokenId: event.updatingTokenId
+        });
         return;
       }
 
@@ -63,11 +69,14 @@ export class TokenMovementCoordinator {
         return;
       }
 
-      const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
-      const updatingtToken = new Token(event.updatingTokenAdapter);
+      const updatingToken = this.tokenRepository.getById(event.updatingTokenId);
+      if (updatingToken === undefined) {
+        this.logger.warn(`Token with ID ${event.updatingTokenId} not found for update`);
+        return;
+      }
 
-      const startPosition = new Vector3(updatingtToken.position.x, updatingtToken.position.y, updatingtToken.elevation ?? 0);
-      const endPosition = this.determineEndPosition(updatingtToken, changes);
+      const startPosition = new Vector3(updatingToken.position.x, updatingToken.position.y, updatingToken.elevation ?? 0);
+      const endPosition = this.determineEndPosition(updatingToken, changes);
 
       if (this.isSamePosition(startPosition, endPosition)) {
         this.logger.debug('No actual position change detected');
@@ -75,19 +84,15 @@ export class TokenMovementCoordinator {
       }
 
       // Execute movement command
-      const moveResult = await this.executeMovement(
-        updatingtToken,
-        endPosition,
-        allTokens
-      );
+      const moveResult = await this.executeMovement(updatingToken, endPosition);
 
       // Emit movement event based on result
-      await this.emitMovementEvent(updatingtToken, moveResult);
+      await this.emitMovementEvent(updatingToken, moveResult);
 
     } catch (error) {
       this.logger.error('Error handling token update', {
         error: error instanceof Error ? error.message : String(error),
-        tokenId: event.updatingTokenAdapter.id,
+        tokenId: event.updatingTokenId
       });
     }
   }
@@ -138,9 +143,11 @@ export class TokenMovementCoordinator {
    */
   private async executeMovement(
     updatingToken: Token,
-    endPosition: Vector3,
-    allTokens: Token[]
+    endPosition: Vector3
   ) {
+
+    const allTokens = this.tokenRepository.getAll();
+
     const command = new MoveTokenCommand(
       updatingToken,
       endPosition,
@@ -151,16 +158,6 @@ export class TokenMovementCoordinator {
     );
 
     const result = await this.commandExecutor.execute(command);
-
-    this.logger.debug('Move command executed', {
-      success: result.success,
-      newPosition: result.newPosition,
-      previousPosition: result.previousPosition,
-      snapTargetId: result.snapTargetId,
-      snapTargetName: result.snapTargetName,
-      distance: result.distance,
-      isSnapped: result.isSnapped
-    });
 
     return result;
   }

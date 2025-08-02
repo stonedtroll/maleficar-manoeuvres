@@ -1,6 +1,9 @@
 import type { DispositionValue } from '../constants/TokenDisposition.js';
 import type { AbstractTokenAdapter } from '../../application/adapters/AbstractTokenAdapter.js';
+import type { Actor } from '../entities/Actor.js'
 
+import { MovementTypes, Speed } from '../value-objects/Speed.js';
+import { Weapon } from '../value-objects/Weapon.js';
 import { Vector2 } from '../value-objects/Vector2.js';
 import { Vector3 } from '../value-objects/Vector3.js';
 import { SpatialVolume } from '../value-objects/SpatialVolume.js';
@@ -9,7 +12,6 @@ import { AABB } from '../value-objects/AABB.js';
 import { Rotation } from '../value-objects/Rotation.js';
 import { DISPOSITION } from '../constants/TokenDisposition.js';
 import { SpatialEntity } from '../interfaces/SpatialEntity';
-import { MovementTypes } from '../value-objects/Speed.js';
 
 export class Token implements SpatialEntity {
 
@@ -145,6 +147,10 @@ export class Token implements SpatialEntity {
         return this._tokenAdapter.disposition;
     }
 
+    get portrait(): string | null {
+        return this._tokenAdapter.portrait;
+    }
+
     get currentMovementMode(): MovementTypes | null {
         return this._tokenAdapter.currentMovementMode as MovementTypes | null;
     }
@@ -168,6 +174,55 @@ export class Token implements SpatialEntity {
     get isBlockingObstacle(): boolean {
         return this._tokenAdapter.isBlockingObstacle;
     }
+
+    get trackingReferenceNumber(): string {
+        return this._tokenAdapter.trackingReferenceNumber;
+    }
+
+    get actor(): Actor {
+        return this._tokenAdapter.actor;
+    }
+
+    get actorName(): string {
+        return this.actor.name;
+    }
+
+    get type(): string {
+        return this.actor.type;
+    }
+
+    get speeds(): ReadonlyArray<Speed> {
+        return this.actor.speeds;
+    }
+
+    get equippedWeapons(): ReadonlyArray<Weapon> {
+        return this.actor.equippedWeapons;
+    }
+
+    hasMovementMode(mode: MovementTypes): boolean {
+        return this.actor.speeds.some(s => s.mode === mode);
+    }
+
+    get health(): number {
+        return this.actor.health;
+    }
+
+    get maxHealth(): number {
+        return this.actor.maxHealth;
+    }
+
+    get tempHealth(): number {
+        return this.actor.tempHealth;
+    }
+
+    get tempMaxHealth(): number {
+        return this.actor.tempMaxHealth;
+    }
+
+    get healthPercentage(): number {
+        return this.maxHealth > 0 ? (this.health / this.maxHealth) * 100 : 0;
+    }
+
     /**
      * Check if another token can pass through this one based on disposition and type.
      */
@@ -176,7 +231,7 @@ export class Token implements SpatialEntity {
         if (!this._tokenAdapter.isBlockingObstacle || !obstacle.isBlockingObstacle) {
             return true;
         }
-        
+
         if (this._tokenAdapter.disposition === obstacle.disposition) {
             return true;
         }

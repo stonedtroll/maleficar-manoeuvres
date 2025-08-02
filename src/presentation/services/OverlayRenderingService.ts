@@ -393,11 +393,6 @@ export class OverlayRenderingService implements InitialisableService {
       const graphics = this.getOrCreateGraphicsInstance(instanceKey, tokenMesh);
       graphics.position.set(0, 0); // Relative to token centre
       
-      this.logger.debug('Rendering on token mesh', {
-        instanceKey,
-        tokenId: context.token.id
-      });
-      
       return { graphics, parentContainer: tokenMesh };
     }
     
@@ -420,12 +415,6 @@ export class OverlayRenderingService implements InitialisableService {
     const position = context.overlayCentre;
     graphics.position.set(position.x, position.y);
     
-    this.logger.debug('Rendering on layer container', {
-      instanceKey,
-      position: graphics.position,
-      layer: typeContainer.parent?.name
-    });
-    
     return { graphics, parentContainer: typeContainer };
   }
 
@@ -440,8 +429,6 @@ export class OverlayRenderingService implements InitialisableService {
     graphics.name = instanceKey;
     this.overlayInstances.set(instanceKey, graphics);
     parent.addChild(graphics);
-    
-      this.logger.debug(`Created graphics instance: ${instanceKey}`);
   } else if (graphics.parent !== parent) {
       this.reparentGraphics(graphics, parent, instanceKey);
   }

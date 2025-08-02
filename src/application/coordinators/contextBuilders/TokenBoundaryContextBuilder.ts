@@ -3,10 +3,7 @@ import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
 import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
-interface TokenBoundaryContextOptions {
-  isGM?: boolean;
-  userColour?: string;
-}
+interface TokenBoundaryContextOptions {}
 
 /**
  * Context builder for token boundary overlays.
@@ -55,9 +52,6 @@ export class TokenBoundaryContextBuilder implements OverlayContextBuilder<TokenB
         dashed: false,
         dashLength: 0,
         gapLength: 0
-      },
-      user: {
-        isGM: options.isGM ?? false
       }
     };
   }

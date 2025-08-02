@@ -27,4 +27,24 @@ export class Actor {
     hasMovementMode(mode: MovementTypes): boolean {
         return this._actorAdapter.speeds.some(s => s.mode === mode);
     }
+
+    get health(): number {
+        return this._actorAdapter.health;
+    }
+
+    get maxHealth(): number {
+        return this._actorAdapter.maxHealth;
+    }
+
+    get tempHealth(): number {
+        return this._actorAdapter.tempHealth;
+    }
+
+    get tempMaxHealth(): number {
+        return this._actorAdapter.tempMaxHealth;
+    }
+
+    get healthPercentage(): number {
+        return this.maxHealth > 0 ? (this.health / this.maxHealth) * 100 : 0;
+    }
 }

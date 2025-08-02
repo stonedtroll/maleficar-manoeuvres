@@ -81,15 +81,6 @@ export class RangeFinderService {
                 verticalGapUnits * verticalGapUnits
             );
 
-            this.logger.debug('Calculated 3D distance between cylinders', {
-                from: fromToken.name,
-                to: toToken.name,
-                horizontalGapPixels: `${horizontalGapPixels.toFixed(2)} px`,
-                horizontalGapUnits: `${horizontalGapUnits.toFixed(2)} ${grid.units}`,
-                verticalGapUnits: `${verticalGapUnits.toFixed(2)} ${grid.units}`,
-                distance: `${distance.toFixed(2)} ${grid.units}`
-            });
-
             return {
                 distance: distance,
                 unit: grid.units

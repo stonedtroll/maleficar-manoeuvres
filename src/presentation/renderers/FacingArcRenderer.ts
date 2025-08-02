@@ -16,12 +16,8 @@ export class FacingArcRenderer {
    * The graphics object is already positioned by OverlayRenderingService
    */
   render(graphics: PIXI.Graphics, context: OverlayRenderContext): void {
-    // Clear any existing drawings
     graphics.clear();
 
-    // Get token parameters
-    const tokenWidth = context.token.width;
-    const tokenHeight = context.token.height;
     const radius = context.token.radius;
     const arcAngle = (context.rotation?.arcAngle ?? 20) * Math.PI / 180;
 
@@ -42,15 +38,6 @@ export class FacingArcRenderer {
     });
 
     graphics.arc(0, 0, radius, startAngle, endAngle, false); // Draw the arc
-
-    this.logger.debug('Rendered facing arc', {
-      rotation,
-      radius,
-      colour: colour.toString(16),
-      startAngle: startAngle * 180 / Math.PI,
-      endAngle: endAngle * 180 / Math.PI,
-      tokenDimensions: { width: tokenWidth, height: tokenHeight }
-    });
   }
 
   private transformArcColour(arcColour?: string | number): number {

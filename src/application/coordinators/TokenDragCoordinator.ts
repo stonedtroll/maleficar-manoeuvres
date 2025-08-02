@@ -17,12 +17,13 @@ import type { OverlayContextBuilderRegistry } from '../registries/OverlayContext
 import type { FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 
 import { Token } from '../../domain/entities/Token.js';
-import { Actor } from '../../domain/entities/Actor.js';
 import { OverlayCoordinatorHelper } from './helpers/OverlayCoordinatorHelper.js';
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MovementValidator } from '../../domain/services/MovementValidator.js';
+import { MovementConfigurationService } from '../../domain/services/MovementConfigurationService.js';
 import { MODULE_ID } from '../../config.js';
 import { SpatialEntity } from '../../domain/interfaces/SpatialEntity.js';
+import { TokenRepository } from '../../infrastructure/repositories/TokenRepository.js';
 
 export class TokenDragCoordinator {
   private readonly logger: FoundryLogger;
@@ -35,7 +36,8 @@ export class TokenDragCoordinator {
     private readonly overlayRegistry: OverlayRegistry,
     private readonly contextBuilderRegistry: OverlayContextBuilderRegistry,
     private readonly movementValidator: MovementValidator,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
+    private readonly tokenRepository: TokenRepository
   ) {
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.TokenDragCoordinator`);
 
@@ -57,28 +59,15 @@ export class TokenDragCoordinator {
 
     try {
       this.logger.debug('Token dragging started', {
-        tokenId: event.dragStartTokenAdaptor.id,
+        tokenId: event.dragTokenId,
       });
 
-      const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
-      const dragStartToken = new Token(event.dragStartTokenAdaptor);
-      const previewToken = new Token(event.previewTokenAdapter);
-      const ownedByCurrentUserActors = event.ownedByCurrentUserActorAdapters.map(adapter => new Actor(adapter));
-
-      await this.updateObstacleIndicatorOverlays(allTokens, dragStartToken, previewToken, event.user.isGM, event.user.colour);
-      await this.updateOverlays(
-        allTokens,
-        previewToken,
-        ownedByCurrentUserActors,
-        event.user.isGM,
-        event.user.colour,
-        'tokenDragStart'
-      );
-
+      await this.updateObstacleIndicatorOverlays(event.dragTokenId);
+      await this.updateOverlays(event.dragTokenId, 'tokenDragStart');
     } catch (error) {
       this.logger.error('Error in handleDragStart', {
         error: error instanceof Error ? error.message : String(error),
-        tokenId: event.dragStartTokenAdaptor.id
+        tokenId: event.dragTokenId
       });
     }
   }
@@ -89,25 +78,12 @@ export class TokenDragCoordinator {
    */
   async handleDragMove(event: TokenDragMoveEvent): Promise<void> {
     try {
-      const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
-      const dragStartToken = new Token(event.dragStartTokenAdaptor);
-      const previewToken = new Token(event.previewTokenAdapter);
-      const ownedByCurrentUserActors = event.ownedByCurrentUserActorAdapters.map(adapter => new Actor(adapter));
-
-      await this.updateObstacleIndicatorOverlays(allTokens, dragStartToken, previewToken, event.user.isGM, event.user.colour);
-      await this.updateOverlays(
-        allTokens,
-        previewToken,
-        ownedByCurrentUserActors,
-        event.user.isGM,
-        event.user.colour,
-        'tokenDragMove'
-      );
-
+      await this.updateObstacleIndicatorOverlays(event.dragTokenId);
+      await this.updateOverlays(event.dragTokenId, 'tokenDragStart');
     } catch (error) {
       this.logger.error('Error in handleDragMove', {
         error: error instanceof Error ? error.message : String(error),
-        tokenId: event?.dragStartTokenAdaptor.id
+        tokenId: event.dragTokenId
       });
     }
   }
@@ -123,7 +99,7 @@ export class TokenDragCoordinator {
     } catch (error) {
       this.logger.error('Error in handleDragEnd', {
         error: error instanceof Error ? error.message : String(error),
-        eventId: event?.id
+        eventId: event.dragTokenId
       });
     }
   }
@@ -169,16 +145,23 @@ export class TokenDragCoordinator {
   /**
  * Validates movement using MovementValidator and updates obstacle overlays
  */
-  private async updateObstacleIndicatorOverlays(
-    allTokens: Token[],
-    dragStartToken: Token,
-    previewToken: Token,
-    isGM: boolean,
-    userColour: string
-  ): Promise<void> {
+  private async updateObstacleIndicatorOverlays(dragTokenId: string): Promise<void> {
     try {
+      const allTokens = this.tokenRepository.getAll();
+      const dragStartToken = this.tokenRepository.getById(dragTokenId);
+      const previewToken = this.tokenRepository.getPreviewToken(dragTokenId);
 
-      const filteredObstacles = this.filterObstacles(allTokens, dragStartToken.id);
+      // Early exit if we don't have the required tokens
+      if (!dragStartToken || !previewToken) {
+        this.logger.warn('Cannot validate movement - missing required tokens', {
+          dragTokenId,
+          hasDragStartToken: !!dragStartToken,
+          hasPreviewToken: !!previewToken
+        });
+        return;
+      }
+
+      const filteredObstacles = this.filterObstacles(allTokens, dragTokenId);
 
       const validationResult = this.movementValidator.validateMovement(
         dragStartToken,
@@ -189,7 +172,7 @@ export class TokenDragCoordinator {
       const currentBlocker = validationResult.blockers?.[0] ?? null;
 
       if (currentBlocker && validationResult.type === 'blocked') {
-        await this.handleObstacleDetected(currentBlocker, isGM, userColour);
+        await this.handleObstacleDetected(currentBlocker);
       } else if (validationResult.type !== 'ignored') {
         await this.handleObstacleClear();
       }
@@ -205,21 +188,16 @@ export class TokenDragCoordinator {
    * Handles when an obstacle is detected during movement.
    * Only renders if the obstacle has changed from the previous one.
    */
-  private async handleObstacleDetected(
-    currentBlocker: SpatialEntity,
-    isGM: boolean,
-    userColour: string,
-  ): Promise<void> {
+  private async handleObstacleDetected(currentBlocker: SpatialEntity): Promise<void> {
     if (this.previousBlocker?.id === currentBlocker.id) {
       return;
     }
 
     await this.clearObstacleIndicatorOverlays();
-    await this.renderObstacleIndicatorOverlays(
-      currentBlocker as Token,
-      isGM,
-      userColour
-    );
+
+    if (MovementConfigurationService.shouldValidateMovement()) {
+      await this.renderObstacleIndicatorOverlays(currentBlocker as Token);
+    }
 
     this.previousBlocker = currentBlocker;
   }
@@ -240,11 +218,7 @@ export class TokenDragCoordinator {
   /**
    * Renders obstacle indicator overlay on a specific token
    */
-  private async renderObstacleIndicatorOverlays(
-    obstacle: Token,
-    isGM: boolean,
-    userColour: string
-  ): Promise<void> {
+  private async renderObstacleIndicatorOverlays(obstacle: Token): Promise<void> {
     try {
       const obstacleIndicatorOverlay = this.overlayRegistry.get('obstacle-indicator');
       if (!obstacleIndicatorOverlay) {
@@ -262,13 +236,10 @@ export class TokenDragCoordinator {
       await this.overlayHelper.requestOverlayRendering(
         [obstacle],
         overlaysWithContextBuilders,
-        isGM,
-        (overlayId, targetToken, isGM) =>
+        (overlayId, targetToken) =>
           this.overlayHelper.buildContextForOverlay(
             overlayId,
             targetToken,
-            isGM,
-            userColour,
             overlaysWithContextBuilders,
             this.contextBuilderRegistry
           )
@@ -308,18 +279,8 @@ export class TokenDragCoordinator {
     this.logger.debug('Drag event handlers registered');
   }
 
-  private async updateOverlays(
-    allTokens: Token[],
-    previewToken: Token,
-    ownedActors: Actor[],
-    isGM: boolean,
-    userColour: string,
-    trigger: keyof OverlayTriggers
-  ): Promise<void> {
-
-    const dragOverlays = this.overlayRegistry.filterByTrigger(
-      trigger
-    );
+  private async updateOverlays(dragTokenId: string, trigger: keyof OverlayTriggers): Promise<void> {
+    const dragOverlays = this.overlayRegistry.filterByTrigger(trigger);
 
     if (dragOverlays.length === 0) {
       return;
@@ -328,13 +289,9 @@ export class TokenDragCoordinator {
     // Process overlays by scope and render them
     const overlayGroups = await this.overlayHelper.processOverlaysByScope(
       dragOverlays,
-      allTokens,
-      isGM,
-      userColour,
       this.contextBuilderRegistry,
       trigger,
-      ownedActors,
-      previewToken
+      dragTokenId
     );
 
     for (const { targetTokens, overlays } of overlayGroups) {
@@ -370,38 +327,13 @@ export class TokenDragCoordinator {
 
       this.dragOverlaysCache.set(token.id, combinedOverlays);
     }
-
-    this.logger.debug('Drag overlays tracked', {
-      dragOverlaysSize: this.dragOverlaysCache.size,
-      dragOverlaysEntries: Array.from(this.dragOverlaysCache.entries()).map(
-        ([tokenId, overlayIds]) => ({
-          tokenId,
-          overlayIds: Array.from(overlayIds)
-        })
-      )
-    });
   }
 
   /**
    * Hides all M-key overlays and clears tracking cache.
    */
   private async hideAllDragOverlays(): Promise<void> {
-    this.logger.debug('Hiding drag overlays', {
-      tokenCount: this.dragOverlaysCache.size
-    });
-
     const overlayTypesToHide = this.collectUniqueOverlayTypes();
-
-    this.logger.debug('Drag overlay types to hide', {
-      overlayTypes: Array.from(overlayTypesToHide),
-      dragOverlaysSize: this.dragOverlaysCache.size,
-      dragOverlaysEntries: Array.from(this.dragOverlaysCache.entries()).map(
-        ([tokenId, overlayIds]) => ({
-          tokenId,
-          overlayIds: Array.from(overlayIds)
-        })
-      )
-    });
 
     for (const overlayTypeId of overlayTypesToHide) {
       this.overlayRenderer.hideAllOverlaysOfType(overlayTypeId);

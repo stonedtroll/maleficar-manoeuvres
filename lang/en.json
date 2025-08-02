@@ -24,6 +24,10 @@
       "meleeWeaponRangeOverride": {
         "name": "Melee Weapon Range Override",
         "hint": "Override a weapon's range when it exactly matches the \"grid\" scale distance."
+      },
+      "movementValidation": {
+        "name": "Movement Validation",
+        "hint": "Enable collision detection and movement validation. When disabled, tokens can move freely through obstacles."
       }
     },
     "tokenSheet": {
@@ -42,7 +46,9 @@
       "moduleInitialised": "Maleficar Manoeuvres initialised successfully",
       "settingChanged": "Setting '{setting}' updated to: {value}",
       "settingFailed": "Failed to update setting '{setting}'",
-      "logLevelChanged": "Log level changed to: {level}"
+      "logLevelChanged": "Log level changed to: {level}",
+      "movementValidationEnabled": "Movement validation enabled",
+      "movementValidationDisabled": "Movement validation disabled"
     }
   }
 }

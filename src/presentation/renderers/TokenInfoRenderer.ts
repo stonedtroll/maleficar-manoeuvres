@@ -3,7 +3,7 @@ import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRender
 import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
-import { RenderingUtils } from '../utils/RenderingUtils.js';
+import { RenderingUtility } from '../utils/RenderingUtility.js';
 
 export class TokenInfoRenderer {
     private readonly logger: FoundryLogger;
@@ -13,7 +13,7 @@ export class TokenInfoRenderer {
     }
 
     render(graphics: PIXI.Graphics, context: OverlayRenderContext): void {
-        RenderingUtils.prepareGraphics(graphics);
+        RenderingUtility.prepareGraphics(graphics);
 
         if (!context.tokenInfo) {
             this.logger.debug('No token info provided in context');
@@ -41,12 +41,12 @@ export class TokenInfoRenderer {
         const padding = { x: 1, y: 0 };
 
         // Create text with optimised settings
-        const style = RenderingUtils.buildTextStyle({
+        const style = RenderingUtility.buildTextStyle({
             ...rangeStyle,
             dropShadow: false,
             stroke: false
         });
-        const text = RenderingUtils.createOptimisedText(range, style, rangeStyle.fontOpacity);
+        const text = RenderingUtility.createOptimisedText(range, style, rangeStyle.fontOpacity);
         text.anchor.set(0, 0.5); 
 
         let totalWidth = text.width;
@@ -54,7 +54,7 @@ export class TokenInfoRenderer {
 
         // Add icon if provided
         if (rangeIcon) {
-            iconSprite = RenderingUtils.createIconSprite(
+            iconSprite = RenderingUtility.createIconSprite(
                 rangeIcon,
                 iconSize,
                 rangeStyle.fontColour,
@@ -70,7 +70,7 @@ export class TokenInfoRenderer {
         if (rangeStyle.backgroundColour && rangeStyle.backgroundOpacity !== undefined) {
             // Create container with background
             const bgHeight = Math.max(text.height, iconSize);
-            container = RenderingUtils.createBackgroundContainer(
+            container = RenderingUtility.createBackgroundContainer(
                 totalWidth,
                 bgHeight,
                 rangeStyle.backgroundColour,

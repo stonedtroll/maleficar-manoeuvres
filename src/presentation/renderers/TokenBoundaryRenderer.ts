@@ -35,19 +35,6 @@ export class TokenBoundaryRenderer {
     const dashLength = context.boundary?.dashLength ?? 5;
     const gapLength = context.boundary?.gapLength ?? 5;
 
-    this.logger.debug('Rendering token boundary', {
-      borderLineWidth,
-      borderColour,
-      borderOpacity,
-      borderRadius,
-      fillColour,
-      fillOpacity,
-      fillRadius,
-      dashed,
-      dashLength,
-      gapLength
-    });
-
     // Draw fill with its own opacity
     graphics.beginFill(fillColour, fillOpacity);
     graphics.drawCircle(0, 0, fillRadius);

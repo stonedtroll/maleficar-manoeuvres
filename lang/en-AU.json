@@ -24,6 +24,10 @@
       "meleeWeaponRangeOverride": {
         "name": "Melee Weapon Range Override",
         "hint": "When your weapon's reach is bang on the \"grid\" distance, swap it for this value instead."
+      },
+      "movementValidation": {
+        "name": "Movement Validation",
+        "hint": "Chuck on collision detection to stop tokens walking through walls like a galah. Turn it off if you want 'em to ghost through obstacles, no worries."
       }
     },
     "tokenSheet": {
@@ -42,7 +46,9 @@
       "moduleInitialised": "Maleficar Manoeuvres is good to go, legend!",
       "settingChanged": "Setting '{setting}' sorted to: {value}",
       "settingFailed": "Strewth! Couldn't update setting '{setting}'",
-      "logLevelChanged": "Log level's now: {level}"
+      "logLevelChanged": "Log level's now: {level}",
+      "movementValidationEnabled": "Movement validation's on, mate - no more walking through walls!",
+      "movementValidationDisabled": "Movement validation's off - tokens can go walkabout through anything now"
     }
   }
 }

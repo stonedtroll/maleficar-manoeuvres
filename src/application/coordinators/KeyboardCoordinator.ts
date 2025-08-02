@@ -59,15 +59,7 @@ export class KeyboardCoordinator {
     this.activeKeys.add(normalisedKey);
     this.logger.debug(`Key pressed`, { key: normalisedKey, activeKeys: Array.from(this.activeKeys) });
 
-    const allTokens = event.allTokenAdapters.map(adapter => new Token(adapter));
-    const ownedActors = event.ownedByCurrentUserActorAdapters.map(adapter => new Actor(adapter));
-
-    await this.updateOverlays(
-      allTokens,
-      ownedActors,
-      event.user.isGM,
-      event.user.colour
-    );
+    await this.updateOverlays();
   }
 
   async handleKeyUp(event: KeyboardKeyUpEvent): Promise<void> {
@@ -129,12 +121,7 @@ export class KeyboardCoordinator {
   /**
    * Updates overlay visibility based on current key states.
    */
-  private async updateOverlays(
-    allTokens: Token[],
-    ownedActors: Actor[],
-    isGM: boolean,
-    userColour: string,
-  ): Promise<void> {
+  private async updateOverlays(): Promise<void> {
     const isMKeyPressed = this.activeKeys.has(KeyboardCoordinator.M_KEY);
 
     if (!isMKeyPressed && this.mKeyOverlaysCache.size > 0) {
@@ -162,12 +149,8 @@ export class KeyboardCoordinator {
     // Process overlays by scope and render them
     const overlayGroups = await this.overlayHelper.processOverlaysByScope(
       mKeyOverlays,
-      allTokens,
-      isGM,
-      userColour,
       this.contextBuilderRegistry,
-      'keyPress',
-      ownedActors,
+      'keyPress'
     );
 
     // Track M-key overlays for cleanup
@@ -194,16 +177,6 @@ export class KeyboardCoordinator {
 
       this.mKeyOverlaysCache.set(token.id, combinedOverlays);
     }
-
-    this.logger.debug('M key overlays tracked', {
-      mKeyOverlaysSize: this.mKeyOverlaysCache.size,
-      mKeyOverlaysEntries: Array.from(this.mKeyOverlaysCache.entries()).map(
-        ([tokenId, overlayIds]) => ({
-          tokenId,
-          overlayIds: Array.from(overlayIds)
-        })
-      )
-    });
   }
 
   /**

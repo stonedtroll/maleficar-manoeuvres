@@ -20,7 +20,8 @@ import type {
   TokenState,
   TokensReadyEvent,
   TokenDragStartEvent,
-  TokenDragMoveEvent
+  TokenDragMoveEvent,
+  TokenDragEndEvent
 } from '../events/FoundryEvents.js';
 import type { InitialisableService } from '../../domain/interfaces/InitialisableService.js';
 import type { DispositionValue } from '../..//domain/constants/TokenDisposition.js';
@@ -354,7 +355,7 @@ export class SystemEventAdapter implements InitialisableService {
     options: any,
     userId: string
   ): void {
-    this.logger.debug(`Token update requested: ${document.name} [${document.id}]`, {
+    this.logger.debug(`Token update requested: ${document.name} (${document.id})`, {
       changes,
       options,
       userId
@@ -364,34 +365,20 @@ export class SystemEventAdapter implements InitialisableService {
       return;
     }
 
-    const updatedToken = this.tokenRepository.getById(document.id);
-
-    if (!updatedToken) {
-      this.logger.warn(`Token update failed: Token not found for ID ${document.id}`);
-      return;
-    }
-
-    this.emitTokenUpdateEvent(updatedToken, changes, options);
-
-    this.logger.debug(`Token updated: ${document.name} [${document.id}]`, {
-      event
-    });
+    this.emitTokenUpdateEvent(document.id, changes, options);
   }
 
   private emitTokenUpdateEvent(
-    token: Token,
+    tokenId: string,
     changes: any,
     options: any
   ): void {
 
     const tokenUpdateEvent: TokenUpdateEvent = {
       timestamp: Date.now(),
-      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
-      updatingTokenAdapter: this.tokenRepository.getAsAdapter(token),
+      updatingTokenId: tokenId,
       changes: this.extractChangedState(changes),
-      updateOptions: this.extractUpdateOptions(options),
-      isUnconstrainedMovement: this.isUnconstrainedMovementEnabled(),
-      user: this.userRepository.getCurrentUserContext()
+      updateOptions: this.extractUpdateOptions(options)
     };
 
     this.eventBus.emit('token:update', tokenUpdateEvent);
@@ -421,111 +408,53 @@ export class SystemEventAdapter implements InitialisableService {
 
     const previewToken = canvas.tokens.preview.children.find(p => p.id === token.id);
     const controlledTokens = canvas.tokens?.controlled || [];
+
     if (controlledTokens.length === 0 && token.id !== controlledTokens[0]?.id) {
       return;
     }
+
     if (previewToken) {
       if (!this.currentlyDragging) {
-        this.logger.debug('Drag starting detected', {
-          token,
-          previewToken,
-          movementData: token.actor?.system?.attributes?.movement ?? 'unknown',
-          movementAction: token.document.movementAction ?? 'unknown',
-          actions: CONFIG.Token.movement.actions ?? 'unknown'
-        });
         this.currentlyDragging = true;
-        this.emitTokenDragStartEvent(token, previewToken);
+
+        this.emitTokenDragStartEvent(token);
       } else if (this.currentlyDragging) {
-        this.logger.debug('Drag moving detected', {
-          token,
-          previewToken,
-          movementData: token.actor?.system?.attributes?.movement ?? 'unknown',
-          movementAction: token.document.movementAction ?? 'unknown',
-          actions: CONFIG.Token.movement.actions ?? 'unknown'
-        });
-        this.handleDragMove(token, previewToken);
+        this.emitTokenDragMoveEvent(token);
       }
     } else if (this.currentlyDragging) {
-      this.logger.debug('Drag ending detected', {
-        token,
-        previewToken,
-        movementData: token.actor?.system?.attributes?.movement ?? 'unknown',
-        movementAction: token.document.movementAction ?? 'unknown',
-        actions: CONFIG.Token.movement.actions ?? 'unknown'
-      });
       this.currentlyDragging = false;
+
       this.handleDragEnd(token);
     }
   }
 
-  private emitTokenDragStartEvent(token: Token, previewToken: Token): void {
-
+  private emitTokenDragStartEvent(token: Token): void {
     const tokenDragStartEvent: TokenDragStartEvent = {
       timestamp: Date.now(),
-      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
-      dragStartTokenAdaptor: this.tokenRepository.getAsAdapter(token),
-      previewTokenAdapter: this.tokenRepository.getAsAdapter(previewToken),
-      ownedByCurrentUserActorAdapters: this.actorRepository.getFromOwnedTokensAsAdapters(),
-      user: this.userRepository.getCurrentUserContext(),
+      dragTokenId: token.id,
     };
 
     this.eventBus.emit('token:dragStart', tokenDragStartEvent);
   }
 
-  /**
-   * Handle drag movement detected by polling
-   */
-  private handleDragMove(token: Token, previewToken: Token): void {
-
+  private emitTokenDragMoveEvent(token: Token): void {
     const tokenDragMoveEvent: TokenDragMoveEvent = {
       timestamp: Date.now(),
-      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
-      dragStartTokenAdaptor: this.tokenRepository.getAsAdapter(token),
-      previewTokenAdapter: this.tokenRepository.getAsAdapter(previewToken),
-      ownedByCurrentUserActorAdapters: this.actorRepository.getFromOwnedTokensAsAdapters(),
-      user: this.userRepository.getCurrentUserContext(),
+      dragTokenId: token.id
     };
 
-    this.logger.debug('Token dragging', {
-      tokenId: token.id,
-      position: { x: token.x, y: token.y },
-      previewPosition: { x: previewToken.x, y: previewToken.y },
-      previewToken: previewToken,
-      placeables: canvas.tokens?.placeables
-    });
     this.eventBus.emit('token:dragMove', tokenDragMoveEvent);
   }
 
-  /**
-   * Handle drag end detected by polling
-   */
   private handleDragEnd(token: Token): void {
-    // const state = this.dragStates.get(token.id);
-    // if (!state) return;
+    const tokenDragEndEvent: TokenDragEndEvent = {
+      timestamp: Date.now(),
+      dragTokenId: token.id
+    };
 
-    // At drag end, use token.x/y for the final rendered position
-    const finalPosition = { x: token.x, y: token.y };
-    const worldPos = canvas.mousePosition || finalPosition;
-
-    this.eventBus.emit('token:dragEnd', {
-      id: token.id,
-      position: finalPosition,
-      worldPosition: { x: worldPos.x, y: worldPos.y },
-      screenPosition: { x: 0, y: 0 },
-      // totalDelta: {
-      //   x: finalPosition.x - state.startPosition.x,
-      //   y: finalPosition.y - state.startPosition.y
-      // },
-      totalDelta: {
-        x: finalPosition.x,
-        y: finalPosition.y
-      },
-      prevented: false
-    });
-
-    // this.dragStates.delete(token.id);
-    // this.lastDragPosition = null;
+    this.eventBus.emit('token:dragEnd', tokenDragEndEvent);
   }
+  
   // Scene Event Handlers
 
   private handlePreUpdateScene(

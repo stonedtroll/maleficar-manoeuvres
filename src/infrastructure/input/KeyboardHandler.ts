@@ -10,16 +10,12 @@ import type {
 
 import { LoggerFactory } from '../../../lib/log4foundry/log4foundry.js';
 import { MODULE_ID } from '../../config.js';
-import { TokenRepository } from '../repositories/TokenRepository.js';
-import { ActorRepository } from '../repositories/ActorRepository.js';
 import { UserRepository } from '../repositories/UserRepository.js';
 
 export class KeyboardHandler {
 
   private readonly logger: FoundryLogger;
   private readonly eventBus: EventBus;
-  private readonly tokenRepository: TokenRepository;
-  private readonly actorRepository: ActorRepository;
   private readonly userRepository: UserRepository;
 
   private readonly activeKeys = new Set<string>();
@@ -33,8 +29,6 @@ export class KeyboardHandler {
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus;
     this.logger = LoggerFactory.getInstance().getFoundryLogger(`${MODULE_ID}.KeyboardHandler`);
-    this.tokenRepository = new TokenRepository();
-    this.actorRepository = new ActorRepository(this.tokenRepository);
     this.userRepository = new UserRepository();
   }
 
@@ -62,18 +56,14 @@ export class KeyboardHandler {
       key,
       code,
       modifiers: { ...this.modifierState },
-      timestamp: Date.now(),
-      user: this.userRepository.getCurrentUserContext(),
-      allTokenAdapters: this.tokenRepository.getAllAsAdapters(),
-      ownedByCurrentUserActorAdapters: this.actorRepository.getFromOwnedTokensAsAdapters(),
+      timestamp: Date.now()
     };
 
     this.logger.debug(`Key pressed`, {
       key: keyDownEvent.key,
       code: keyDownEvent.code,
       modifiers: keyDownEvent.modifiers,
-      timestamp: keyDownEvent.timestamp,
-      user: keyDownEvent.user,
+      timestamp: keyDownEvent.timestamp
     });
 
     this.eventBus.emit('keyboard:keyDown', keyDownEvent);
@@ -91,16 +81,14 @@ export class KeyboardHandler {
       key,
       code,
       modifiers: { ...this.modifierState },
-      timestamp: Date.now(),
-      user: this.userRepository.getCurrentUserContext(),
+      timestamp: Date.now()
     };
 
     this.logger.debug(`Key released`, {
       key: keyUpEvent.key,
       code: keyUpEvent.code,
       modifiers: keyUpEvent.modifiers,
-      timestamp: keyUpEvent.timestamp,
-      user: keyUpEvent.user,
+      timestamp: keyUpEvent.timestamp
     });
 
     this.eventBus.emit('keyboard:keyUp', keyUpEvent);
