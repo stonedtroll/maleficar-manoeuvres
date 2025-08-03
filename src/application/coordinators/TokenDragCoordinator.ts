@@ -79,7 +79,7 @@ export class TokenDragCoordinator {
   async handleDragMove(event: TokenDragMoveEvent): Promise<void> {
     try {
       await this.updateObstacleIndicatorOverlays(event.dragTokenId);
-      await this.updateOverlays(event.dragTokenId, 'tokenDragStart');
+      await this.updateOverlays(event.dragTokenId, 'tokenDragMove');
     } catch (error) {
       this.logger.error('Error in handleDragMove', {
         error: error instanceof Error ? error.message : String(error),
