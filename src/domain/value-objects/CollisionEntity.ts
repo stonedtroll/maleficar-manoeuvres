@@ -97,31 +97,46 @@ export class CollisionEntity implements SpatialEntity {
         return new Vector3(
             this.centre.x,
             this.centre.y,
-            this._elevation + 0.5
+            this._elevation + (this.verticalHeight / 2)
         );
     }
+    /**
+     * Gets the spatial volume for collision detection.
+     * Creates a cylinder representing the token's physical space.
+     */
     getSpatialVolume(): SpatialVolume {
+        const radius = Math.max(this.width, this.height) / 2;
+        
+        // Use centre coordinates for proper collision cylinder positioning
+        const centre = new Vector3(
+            this.centre.x,           
+            this.centre.y,           
+            this.elevation + (this.verticalHeight / 2)  
+        );
 
         return {
             type: 'cylinder',
-            centre: new Vector3(
-                this.centre.x,
-                this.centre.y,
-                this._elevation + 0.5
-            ),
-            radius: this.radius,
-            height: this.height,
-            axis: 'z' // Always vertical
+            centre,
+            radius,
+            height: this.verticalHeight,  
+            axis: 'z' as const
         };
     }
 
     getAABB(): AABB {
-        // Simple 2D projection of the cylinder for QuadTree indexing
-        return AABB.fromCircle(this.position, this.radius);
+        const min = this._position;
+        const max = new Vector2(
+            this._position.x + this._width,
+            this._position.y + this._height
+        );
+        
+        const aabb = new AABB(min, max);
+        
+        return aabb;
     }
 
     /**
-     * Gets the entity type - always 'token' for collision entities
+     * Gets the entity type - always 'token' for collision entities...for now.
      */
     getType(): 'token' {
         return 'token';

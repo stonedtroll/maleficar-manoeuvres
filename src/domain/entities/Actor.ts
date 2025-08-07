@@ -47,4 +47,28 @@ export class Actor {
     get healthPercentage(): number {
         return this.maxHealth > 0 ? (this.health / this.maxHealth) * 100 : 0;
     }
+
+    
+    get anguish(): number {
+        return this._actorAdapter.anguish;
+    }
+
+    set anguish(value: number) {
+        this._actorAdapter.anguish = value;
+    }
+
+    get maxAnguish(): number {
+        return this._actorAdapter.maxAnguish;
+    }   
+
+    get anguishPercentage(): number {
+        return this.maxAnguish > 0 ? (this.anguish / this.maxAnguish) * 100 : 0;
+    }
+
+    getAnguish(): Anguish {
+        return Anguish.create({
+            current: this.anguish,
+            max: this.maxAnguish
+        });
+    }
 }

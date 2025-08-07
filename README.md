@@ -64,6 +64,7 @@ When a token is being dragged, its boundary is attached to the preview token.
 
 ## Suggested Module
 - Shadows & Secrets: https://github.com/stonedtroll/shadows-and-secrets
+- Insania et Perturbatio Animi: https://github.com/stonedtroll/insania-et-perturbatio-animi
 - Enhances token vision detection and assists in identifying which tokens should display an overlay: https://github.com/dev7355608/vision-5e
 
 ## Attribution

@@ -62,8 +62,13 @@ export class Token implements SpatialEntity {
     }
 
     getAABB(): AABB {
-        // Simple 2D projection of the cylinder for QuadTree indexing
-        return AABB.fromCircle(this.position, this.radius);
+        const min = this.position;
+        const max = new Vector2(
+            this.position.x + this.width,
+            this.position.y + this.height
+        );
+        
+        return new AABB(min, max);
     }
 
     get id(): string {
@@ -241,13 +246,11 @@ export class Token implements SpatialEntity {
             return false;
         }
 
-        // Neutral tokens have special pass-through rules
         if (this._tokenAdapter.disposition === DISPOSITION.NEUTRAL ||
             obstacle.disposition === DISPOSITION.NEUTRAL) {
             return true;
         }
 
-        // Different dispositions block each other by default
         return false;
     }
 }
