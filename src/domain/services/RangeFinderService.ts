@@ -11,7 +11,7 @@ import { MODULE_ID } from '../../config.js';
 
 export interface RangeResult {
     distance: number;
-    unit: string;
+    units: string;
 }
 
 export class RangeFinderService {
@@ -60,7 +60,7 @@ export class RangeFinderService {
                 // Just return horizontal gap in pixels as a fallback
                 return {
                     distance: horizontalGapPixels,
-                    unit: 'px'
+                    units: 'px'
                 };
             }
 
@@ -71,7 +71,7 @@ export class RangeFinderService {
             if (horizontalGapUnits === 0 && verticalGapUnits === 0) {
                 return {
                     distance: 0,
-                    unit: grid.units
+                    units: grid.units
                 };
             }
 
@@ -83,7 +83,7 @@ export class RangeFinderService {
 
             return {
                 distance: distance,
-                unit: grid.units
+                units: grid.units
             };
         }
 
@@ -91,7 +91,7 @@ export class RangeFinderService {
         const grid = this.gridRepository.getCurrentGrid();
         return {
             distance: 0,
-            unit: grid?.units ?? 'm'
+            units: grid?.units ?? 'm'
         };
     }
 }

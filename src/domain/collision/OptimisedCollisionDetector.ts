@@ -67,7 +67,7 @@ export class OptimisedCollisionDetector implements CollisionDetector {
     obstacles: SpatialEntity[]
   ): CollisionResult {
 
-    if (!movingEntity.isBlockingObstacle) {
+    if (!movingEntity.collidable) {
       return { isColliding: false, collidingWith: [] };
     }
 
@@ -120,7 +120,7 @@ export class OptimisedCollisionDetector implements CollisionDetector {
     entityB: SpatialEntity
   ): boolean {
 
-    if (!entityA.isBlockingObstacle || !entityB.isBlockingObstacle) {
+    if (!entityA.collidable || !entityB.collidable) {
       return false;
     }
     

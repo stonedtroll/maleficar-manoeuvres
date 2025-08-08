@@ -14,7 +14,14 @@ export const TokenInfoDefinition: OverlayDefinition = {
   styling: {
     range: {
       font: 'Roboto Condensed',
-      fontSize: 10,
+      fontSize: 9,
+      fontColour: '#D4C8B8',
+      fontWeight: '400',
+      fontOpacity: 1
+    },
+    cover: {
+      font: 'Roboto Condensed',
+      fontSize: 9,
       fontColour: '#D4C8B8',
       fontWeight: '400',
       fontOpacity: 1

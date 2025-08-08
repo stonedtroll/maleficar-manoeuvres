@@ -20,7 +20,8 @@ export interface SpatialEntity {
 
     canPassThrough(obstacle: SpatialEntity): boolean;
 
-    isBlockingObstacle: boolean;
+    collidable: boolean;
+    providesCover: boolean;
     verticalExtent: VerticalExtent;
     verticalHeight: number;
     position: Vector2;

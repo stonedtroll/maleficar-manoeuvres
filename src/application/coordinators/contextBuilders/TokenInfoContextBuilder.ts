@@ -3,12 +3,15 @@ import type { Token } from '../../../domain/entities/Token.js';
 import type { OverlayRenderContext } from '../../../domain/interfaces/OverlayRenderContext.js';
 import type { OverlayDefinition } from '../../../domain/interfaces/OverlayDefinition.js';
 
-import { MODULE_ID } from '../../../config.js';
-
 interface TokenInfoContextOptions {
-    range?: number;
-    rangeUnit?: string;
-    rangeBackgroundColour?: string;
+    rangeIcon: string;
+    displayRange: string;
+    rangeBackgroundColour: string;
+    rangeBackgroundOpacity: number;
+    coverIcon: string;
+    displayCover: string;
+    coverBackgroundColour: string;
+    coverBackgroundOpacity: number; 
 }
 
 /**
@@ -20,33 +23,12 @@ export class TokenInfoContextBuilder implements OverlayContextBuilder<TokenInfoC
         overlayDefinition: OverlayDefinition,
         options: TokenInfoContextOptions
     ): OverlayRenderContext {
-
-        const displayRange = options.range !== undefined && options.rangeUnit !== undefined
-            ? `${options.range.toFixed(1)} ${options.rangeUnit}`
-            : null;
-
-        let styling = overlayDefinition.styling;
-
-        if (overlayDefinition.styling?.range && options.rangeBackgroundColour !== undefined) {
-            // Create a new range object with all existing properties plus the background colour
-            const updatedRange = {
-                ...overlayDefinition.styling.range,
-                backgroundColour: options.rangeBackgroundColour,
-                backgroundOpacity: 0.6
-            };
-
-            styling = {
-                ...overlayDefinition.styling,
-                range: updatedRange
-            };
-        }
-
         return {
             overlayTypeId: 'token-info',
             renderLayer: overlayDefinition.renderLayer,
             renderOnTokenMesh: overlayDefinition.renderOnTokenMesh,
             zIndex: overlayDefinition.zIndex,
-            ...(styling && { styling }),
+            ...(overlayDefinition.styling && { styling: overlayDefinition.styling }),
             overlayCentre: {
                 x: targetToken.centre.x,
                 y: targetToken.centre.y
@@ -68,8 +50,14 @@ export class TokenInfoContextBuilder implements OverlayContextBuilder<TokenInfoC
                 currentMovementMode: targetToken.currentMovementMode
             },
             tokenInfo: {
-                rangeIcon: `modules/${MODULE_ID}/assets/images/icons/range.webp`,
-                range: displayRange,
+                rangeIcon: options.rangeIcon,
+                range: options.displayRange,
+                rangeBackgroundColour: options.rangeBackgroundColour,
+                rangeBackgroundOpacity: options.rangeBackgroundOpacity,
+                coverIcon: options.coverIcon,
+                cover: options.displayCover,
+                coverBackgroundColour: options.coverBackgroundColour,
+                coverBackgroundOpacity: options.coverBackgroundOpacity
             }
         };
     }

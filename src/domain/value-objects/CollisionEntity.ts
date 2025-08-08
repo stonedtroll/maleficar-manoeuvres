@@ -23,7 +23,8 @@ export interface CollisionEntityConfig {
     readonly elevation: number;
     readonly disposition: DispositionValue;
     readonly verticalHeight: number; 
-    readonly isBlockingObstacle: boolean; 
+    readonly collidable: boolean; 
+    readonly providesCover: boolean; 
 }
 
 /**
@@ -37,7 +38,8 @@ export class CollisionEntity implements SpatialEntity {
     private readonly _width: number;
     private readonly _height: number;
     private readonly _verticalHeight: number;
-    private readonly _isBlockingObstacle: boolean;
+    private readonly _collidable: boolean;
+    private readonly _providesCover: boolean;
 
     constructor(config: CollisionEntityConfig) {
         this._position = Object.freeze(config.position);
@@ -46,7 +48,8 @@ export class CollisionEntity implements SpatialEntity {
         this._elevation = config.elevation;
         this._disposition = config.disposition;
         this._verticalHeight = config.verticalHeight;
-        this._isBlockingObstacle = config.isBlockingObstacle;
+        this._collidable = config.collidable;
+        this._providesCover = config.providesCover;
 
         Object.freeze(this);
     }
@@ -142,13 +145,17 @@ export class CollisionEntity implements SpatialEntity {
         return 'token';
     }
 
-    get isBlockingObstacle(): boolean {
-        return this._isBlockingObstacle;
+    get collidable(): boolean {
+        return this._collidable;
     }
 
-    canPassThrough(obstacle: CollisionEntity): boolean {
+    get providesCover(): boolean {
+        return this._providesCover;
+    }
 
-        if (!this._isBlockingObstacle || !obstacle.isBlockingObstacle) {
+    canPassThrough(obstacle: SpatialEntity): boolean {
+
+        if (!this._collidable || !obstacle.collidable) {
             return true;
         }
 

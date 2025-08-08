@@ -112,7 +112,7 @@ export class TokenAdapter extends AbstractTokenAdapter {
         return false;
     }
 
-    get isBlockingObstacle(): boolean {
+    get collidable(): boolean {
         return !this.isSwarm;
     }
 

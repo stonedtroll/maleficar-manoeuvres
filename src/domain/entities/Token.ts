@@ -176,8 +176,12 @@ export class Token implements SpatialEntity {
         return this._tokenAdapter.verticalHeight;
     }
 
-    get isBlockingObstacle(): boolean {
-        return this._tokenAdapter.isBlockingObstacle;
+    get collidable(): boolean {
+        return this._tokenAdapter.collidable;
+    }
+
+    get providesCover(): boolean {
+        return true;
     }
 
     get trackingReferenceNumber(): string {
@@ -233,7 +237,7 @@ export class Token implements SpatialEntity {
      */
     canPassThrough(obstacle: Token): boolean {
 
-        if (!this._tokenAdapter.isBlockingObstacle || !obstacle.isBlockingObstacle) {
+        if (!this._tokenAdapter.collidable || !obstacle.collidable) {
             return true;
         }
 

@@ -4,7 +4,8 @@
  */
 
 /**
- * Token disposition constants matching Foundry VTT's CONST.TOKEN_DISPOSITIONS
+ * Token disposition values for Foundry VTT.
+ * Optimised for fast comparison and collision detection.
  */
 export const DISPOSITION = {
     /** Hostile towards player characters */
@@ -14,7 +15,9 @@ export const DISPOSITION = {
     /** Friendly towards player characters */
     FRIENDLY: 1,
     /** Secret/hidden disposition */
-    SECRET: -2
+    SECRET: -2,
+    /** Special value for entities without disposition (walls, terrain, etc.) */
+    NONE: -999
 } as const;
 
 /**
@@ -38,4 +41,12 @@ export function isValidDisposition(value: unknown): value is DispositionValue {
 export function getDispositionName(value: DispositionValue): keyof typeof DISPOSITION {
     const entry = Object.entries(DISPOSITION).find(([, val]) => val === value);
     return entry?.[0] as keyof typeof DISPOSITION;
+}
+
+/**
+ * Check if a disposition value represents a token with actual disposition.
+ * Optimised for performance with simple number comparison.
+ */
+export function hasActualDisposition(disposition: DispositionValue): boolean {
+    return disposition !== DISPOSITION.NONE;
 }

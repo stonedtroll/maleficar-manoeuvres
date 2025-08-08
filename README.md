@@ -43,6 +43,7 @@ To follow the module’s development, you can read the series here: https://hash
         - Future Support: Additional game systems will be added based on community interest.
 - **Rangefinder**: Dynamically display 3D, edge‑to‑edge distances using spatial volume between selected tokens and other tokens on the canvas, updating in real time to help players gauge movement, weapon and spell ranges.
     - Visually distinguishes when a token falls within the source token weapon’s effective range or overall range.
+- **Cover**: Calculates the amount of cover for all visible tokens from the perspective of the currently controlled token.
 
 <p align=center>
     <img width="1072" height="386" alt="Range Finder" src="assets/images/documentation/rangefinder.png" />
@@ -57,7 +58,7 @@ When a token is being dragged, its boundary is attached to the preview token.
 - **Movement Validation**: Enable collision detection and movement validation. When disabled, tokens can move freely through obstacles.
 
 ## Usage
-- Hold 'm' to display token boundaries and facing arcs.
+- Hold 'm' to display token boundaries, range, cover, and facing arcs.
 - The facing-arc colour indicates each token’s disposition.
 - Selecting a token changes its facing-arc to your user colour.
 - By default, selection and hover borders are turned off, but you can enable them again in the Settings menu.
@@ -75,6 +76,7 @@ When a token is being dragged, its boundary is attached to the preview token.
     <li><a href="https://www.flaticon.com/free-icons/climbing" title="climbing icons">Climbing icons created by Freepik - Flaticon</a></li>
     <li><a href="https://www.flaticon.com/free-icons/dig" title="dig icons">Dig icons created by Leremy - Flaticon</a></li>
     <li><a href="https://www.flaticon.com/free-icons/road" title="road icons">Road icons created by Pixel perfect - Flaticon</a></li>
+    <li><a href="https://www.flaticon.com/free-icons/defence" title="defence icons">Defence icons created by Hilmy Abiyyu A. - Flaticon</a></li>
 </ul>
 
 <p align=right>

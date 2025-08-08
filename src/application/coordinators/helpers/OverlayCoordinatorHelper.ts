@@ -19,10 +19,14 @@ import { RangeFinderService } from '../../../domain/services/RangeFinderService.
 import { Weapon } from '../../../domain/value-objects/Weapon.js';
 import { TokenRepository } from '../../../infrastructure/repositories/TokenRepository.js';
 import { UserRepository } from '../../../infrastructure/repositories/UserRepository.js';
+import { CoverCalculator } from '../../../domain/services/CoverCalculator.js';
+import { ObstacleRepository } from '../../../infrastructure/repositories/ObstacleRepository.js';
 
 export class OverlayCoordinatorHelper {
     private readonly logger: FoundryLogger;
     private readonly renderedOverlays = new Map<string, Set<string>>();
+    // Cache for batch-calculated cover results
+    private coverResultsCache = new Map<string, Map<string, number>>();
 
     constructor(
         private readonly overlayRenderer: OverlayRenderingService,
@@ -53,6 +57,23 @@ export class OverlayCoordinatorHelper {
             ? tokenRepository.getPreviewToken(dragTokenId)
             : undefined;
 
+        // Determine source token for cover calculations
+        let sourceToken: Token | undefined;
+        if (previewToken) {
+            sourceToken = previewToken;
+        } else {
+            sourceToken = allTokens.find(token => token.isControlledByCurrentUser);
+        }
+
+        // Pre-calculate cover if needed (check if any overlay needs cover data)
+        const needsCoverCalculation = overlays.some(overlay =>
+            overlay.id === 'token-info'
+        );
+
+        if (needsCoverCalculation && sourceToken) {
+            await this.preCalculateCoverForAllTargets(sourceToken, allTokens, !!previewToken);
+        }
+
         for (const [targetScope, scopeOverlays] of overlayGroups.entries()) {
             const targetTokens = this.getTargetTokens(
                 allTokens,
@@ -68,13 +89,6 @@ export class OverlayCoordinatorHelper {
                 scopeOverlays,
                 contextBuilderRegistry
             );
-
-            let sourceToken: Token | undefined;
-            if (previewToken) {
-                sourceToken = previewToken;
-            } else {
-                sourceToken = allTokens.find(token => token.isControlledByCurrentUser);
-            }
 
             await this.requestOverlayRendering(
                 targetTokens,
@@ -96,6 +110,77 @@ export class OverlayCoordinatorHelper {
         }
 
         return processedGroups;
+    }
+
+    /**
+     * Pre-calculates cover for all potential targets using batch calculation.
+     * Results are cached for use during context building.
+     */
+    private async preCalculateCoverForAllTargets(
+        sourceToken: Token,
+        allTokens: Token[],
+        invalidateAttacker: boolean
+    ): Promise<void> {
+        const cacheKey = sourceToken.id;
+
+        this.coverResultsCache.delete(cacheKey);
+
+        // Filter to valid targets (visible, not hidden, not the attacker)
+        const validTargets = allTokens.filter(token =>
+            token.visible &&
+            !token.hidden &&
+            token.id !== sourceToken.id
+        );
+
+        if (validTargets.length === 0) {
+            return;
+        }
+
+        // Get all potential obstacles
+        const obstacleRepository = new ObstacleRepository();
+        const allObstacles = obstacleRepository.getAll();
+
+        // Base obstacle filtering - remove attacker and invisible/hidden tokens
+        const baseObstacles = allObstacles.filter(obstacle => {
+            // Exclude the attacker from obstacles
+            if (obstacle.id === sourceToken.id) {
+                return false;
+            }
+
+            // Check if obstacle is a token and apply visibility rules
+            if ('visible' in obstacle && 'hidden' in obstacle) {
+                // It's a token - check visibility
+                if (!obstacle.visible || obstacle.hidden) {
+                    return false;
+                }
+            }
+
+            // Keep all other obstacles (walls, visible tokens including other targets)
+            return true;
+        });
+
+        // Calculate cover for each target with per-target obstacle filtering
+        const resultMap = new Map<string, number>();
+        const coverCalculator = new CoverCalculator();
+
+        for (const target of validTargets) {
+            // Filter out only this specific target from obstacles
+            const obstaclesForTarget = baseObstacles.filter(obstacle =>
+                obstacle.id !== target.id
+            );
+
+            // Calculate cover for this specific target
+            const result = coverCalculator.calculateCover(
+                sourceToken,
+                target,
+                obstaclesForTarget,
+                invalidateAttacker
+            );
+
+            resultMap.set(target.id, result.percentage);
+        }
+
+        this.coverResultsCache.set(cacheKey, resultMap);
     }
 
     // Public API - Token Filtering
@@ -135,6 +220,7 @@ export class OverlayCoordinatorHelper {
         }
 
         this.renderedOverlays.clear();
+        this.clearCoverCache(); // Clear cover cache when hiding overlays
     }
 
     /**
@@ -419,18 +505,15 @@ export class OverlayCoordinatorHelper {
         targetToken: Token,
         sourceToken?: Token,
     ): any {
-
-
         switch (overlayId) {
             case 'facing-arc':
                 const user = new UserRepository().getCurrentUser();
-
                 return {
                     isGM: user?.isGM,
                     userColour: user?.colour
                 };
-            case 'actor-info':
 
+            case 'actor-info':
                 const ownedByCurrentUserTokens = new TokenRepository().getOwnedByCurrentUser();
                 const ownedByCurrentUserActors = ownedByCurrentUserTokens
                     .map(token => token.actor)
@@ -439,8 +522,8 @@ export class OverlayCoordinatorHelper {
                 return {
                     ownedByCurrentUserActors
                 };
-            case 'token-info':
 
+            case 'token-info': {
                 if (!sourceToken) {
                     this.logger.debug('No controlled token found for token-info overlay');
                     return {};
@@ -455,11 +538,33 @@ export class OverlayCoordinatorHelper {
                     rangeResult.distance
                 );
 
+
+                const displayRange = rangeResult.distance !== undefined && rangeResult.units !== undefined
+                    ? `${rangeResult.distance.toFixed(1)} ${rangeResult.units}`
+                    : null;
+
+
+                // Include cover percentage if available
+                const coverMap = this.coverResultsCache.get(sourceToken.id);
+                const coverPercentage = coverMap?.get(targetToken.id) ?? null;
+
+                const displayCover = coverPercentage !== null
+                    ? `${coverPercentage}%`
+                    : null;
+
                 return {
-                    range: rangeResult.distance,
-                    rangeUnit: rangeResult.unit,
-                    rangeBackgroundColour: rangeBackgroundColour
+                    rangeIcon: `modules/${MODULE_ID}/assets/images/icons/range.webp`,
+                    displayRange,
+                    rangeBackgroundColour: rangeBackgroundColour,
+                    rangeBackgroundOpacity: 0.6,
+                    coverIcon: `modules/${MODULE_ID}/assets/images/icons/cover.webp`,
+                    displayCover: displayCover,
+                    coverBackgroundColour: '#8F6300',
+                    coverBackgroundOpacity: coverPercentage ? coverPercentage / 100 : 0,
                 };
+            }
+
+
             default:
                 return {};
         }
@@ -491,5 +596,13 @@ export class OverlayCoordinatorHelper {
         }
 
         return null;
+    }
+
+    /**
+     * Clears the cover results cache.
+     * Call when the scene changes or tokens are added/removed.
+     */
+    clearCoverCache(): void {
+        this.coverResultsCache.clear();
     }
 }

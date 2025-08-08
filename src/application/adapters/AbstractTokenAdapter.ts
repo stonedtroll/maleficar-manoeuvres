@@ -25,7 +25,7 @@ export abstract class AbstractTokenAdapter {
     abstract get actorId(): string | null;
     abstract get verticalHeight(): number;
     abstract get actor(): Actor;
-    abstract get isBlockingObstacle(): boolean;
+    abstract get collidable(): boolean;
     abstract get trackingReferenceNumber(): string;
     abstract get portrait(): string | null;
 }

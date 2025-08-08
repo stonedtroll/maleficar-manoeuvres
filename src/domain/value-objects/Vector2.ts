@@ -14,15 +14,21 @@ export class Vector2 {
         return new Vector2(this.x - other.x, this.y - other.y);
     }
 
-    multiply(scalar: number): Vector2 {
-        return new Vector2(this.x * scalar, this.y * scalar);
+    multiplyScalar(scalar: number): Vector2 {
+        return new Vector2(
+            this.x * scalar,
+            this.y * scalar
+        );
     }
 
-    divide(scalar: number): Vector2 {
-        if (scalar === 0) {
-            throw new Error('Division by zero');
+    divideScalar(scalar: number): Vector2 {
+        if (Math.abs(scalar) < 0.0001) {
+            throw new Error('Cannot divide by zero or near-zero value');
         }
-        return new Vector2(this.x / scalar, this.y / scalar);
+        return new Vector2(
+            this.x / scalar,
+            this.y / scalar
+        );
     }
 
     distanceTo(other: Vector2): number {
@@ -31,9 +37,6 @@ export class Vector2 {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    /**
-     * Get the squared distance to another vector (avoids expensive sqrt)
-     */
     distanceSquaredTo(other: Vector2): number {
         const dx = this.x - other.x;
         const dy = this.y - other.y;
@@ -44,9 +47,6 @@ export class Vector2 {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
 
-    /**
- * Get the squared magnitude (avoids expensive sqrt)
- */
     magnitudeSquared(): number {
         return this.x * this.x + this.y * this.y;
     }
@@ -57,12 +57,23 @@ export class Vector2 {
         return this.x * this.x + this.y * this.y;
     }
 
-    normalised(): Vector2 {
-        const mag = this.magnitude();
-        if (mag === 0) {
-            return new Vector2(0, 0);
+    /**
+     * Returns the length (magnitude) of this vector.
+     */
+    length(): number {
+        return Math.sqrt(this.lengthSquared());
+    }
+
+    /**
+     * Returns a normalised (unit) version of this vector.
+     * Throws an error if the vector has zero length.
+     */
+    normalise(): Vector2 {
+        const len = this.length();
+        if (len < 0.0001) {
+            throw new Error('Cannot normalise a zero-length vector');
         }
-        return this.divide(mag);
+        return this.divideScalar(len);
     }
 
     /**
@@ -72,6 +83,9 @@ export class Vector2 {
         return new Vector2(-this.y, this.x);
     }
 
+    /**
+     * Returns the dot product of this vector and another.
+     */
     dot(other: Vector2): number {
         return this.x * other.x + this.y * other.y;
     }

@@ -98,6 +98,12 @@ interface TokenInfoContext {
 
   rangeIcon: string;
   range: string | null;
+  rangeBackgroundColour: string;
+  rangeBackgroundOpacity: number;
+  coverIcon: string;
+  cover: string | null;
+  coverBackgroundColour: string;
+  coverBackgroundOpacity: number;
 }
 
 interface SpeedContext {

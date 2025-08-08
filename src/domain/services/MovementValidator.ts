@@ -134,7 +134,8 @@ export class MovementValidator {
       elevation: movingToken.elevation,
       disposition: movingToken.disposition,
       verticalHeight: movingToken.verticalHeight,
-      isBlockingObstacle: movingToken.isBlockingObstacle
+      collidable: movingToken.collidable,
+      providesCover: movingToken.providesCover
     });
 
     const collisionResult = this.collisionDetector.checkCollision(collisionEntity, obstacles);
@@ -220,7 +221,7 @@ export class MovementValidator {
     obstacles: SpatialEntity[]
   ): SpatialEntity[] {
 
-    const blockingObstacles = obstacles.filter(obstacle => obstacle.isBlockingObstacle);
+    const blockingObstacles = obstacles.filter(obstacle => obstacle.collidable);
 
     return blockingObstacles;
   }
@@ -351,7 +352,8 @@ export class MovementValidator {
         elevation: ignoreElevation ? movingToken.elevation : position.z,
         disposition: movingToken.disposition,
         verticalHeight: movingToken.verticalHeight,
-        isBlockingObstacle: movingToken.isBlockingObstacle
+        collidable: movingToken.collidable,
+        providesCover: movingToken.providesCover
       });
 
       // Check for collisions

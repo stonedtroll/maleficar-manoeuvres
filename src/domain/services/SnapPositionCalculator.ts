@@ -139,7 +139,8 @@ export class SnapPositionCalculator {
         elevation: testPosition.z,
         disposition: movingEntity.disposition,
         verticalHeight: movingEntity.verticalHeight,
-        isBlockingObstacle: movingEntity.isBlockingObstacle
+        collidable: movingEntity.collidable,
+        providesCover: movingEntity.providesCover
       });
       
       // Check for any collisions
@@ -167,7 +168,8 @@ export class SnapPositionCalculator {
             elevation: finePosition.z,
             disposition: movingEntity.disposition,
             verticalHeight: movingEntity.verticalHeight,
-            isBlockingObstacle: movingEntity.isBlockingObstacle
+            collidable: movingEntity.collidable,
+            providesCover: movingEntity.providesCover
           });
 
           const fineCollisions = this.collisionDetector.checkCollision(fineCollisionEntity, [snapTarget, ...otherObstacles]);
@@ -209,7 +211,8 @@ export class SnapPositionCalculator {
             elevation: currentPosition.z,
             disposition: movingEntity.disposition,
             verticalHeight: movingEntity.verticalHeight,
-            isBlockingObstacle: movingEntity.isBlockingObstacle
+            collidable: movingEntity.collidable,
+            providesCover: movingEntity.providesCover
           });
 
         const currentCollisions = this.collisionDetector.checkCollision(collisionEntity, [snapTarget, ...otherObstacles]);
@@ -234,7 +237,8 @@ export class SnapPositionCalculator {
             elevation: testPos.z,
             disposition: movingEntity.disposition,
             verticalHeight: movingEntity.verticalHeight,
-            isBlockingObstacle: movingEntity.isBlockingObstacle
+            collidable: movingEntity.collidable,
+            providesCover: movingEntity.providesCover
           });
 
           const testCollisions = this.collisionDetector.checkCollision(testCollisionEntity, [snapTarget, ...otherObstacles]);
