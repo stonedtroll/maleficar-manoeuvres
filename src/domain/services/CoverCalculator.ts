@@ -38,6 +38,20 @@ export class CoverCalculator {
     if (invalidateAttacker) {
       this.attackerEyeCache.delete(attacker);
     }
+
+    const attackerAABB = this.getCachedAABB(attacker);
+    const targetAABB = this.getCachedAABB(target);
+    
+    if (attackerAABB.intersects(targetAABB)) {
+      return {
+        percentage: 0,
+        blockingObstacles: [],
+        rayDetails: {
+          total: 0,
+          blocked: 0
+        }
+      };
+    }
     
     const relevantObstacles = this.filterRelevantObstacles(
       attacker, 
@@ -206,6 +220,25 @@ export class CoverCalculator {
       if (obstacle.id === attacker.id || obstacle.id === target.id) {
         return false;
       }
+      const obstacleAABB = this.getCachedAABB(obstacle);
+      const attackerAABB = this.getCachedAABB(attacker);
+      const targetAABB = this.getCachedAABB(target);
+      
+      const containedInAttacker = 
+        obstacleAABB.min.x >= attackerAABB.min.x &&
+        obstacleAABB.max.x <= attackerAABB.max.x &&
+        obstacleAABB.min.y >= attackerAABB.min.y &&
+        obstacleAABB.max.y <= attackerAABB.max.y;
+        
+      const containedInTarget = 
+        obstacleAABB.min.x >= targetAABB.min.x &&
+        obstacleAABB.max.x <= targetAABB.max.x &&
+        obstacleAABB.min.y >= targetAABB.min.y &&
+        obstacleAABB.max.y <= targetAABB.max.y;
+      
+      if (containedInAttacker || containedInTarget) {
+        return false;
+      }
 
       return obstacle.providesCover;
     });
@@ -277,7 +310,7 @@ export class CoverCalculator {
       for (let i = 0; i < zoneSamples; i++) {
         const angle = arcStart + (i / Math.max(1, zoneSamples - 1)) * arcSpan;
         const x = target.position.x + target.width / 2 + 
-                 Math.cos(angle) * target.width * 0.48; // Near edge for better accuracy
+                 Math.cos(angle) * target.width * 0.48; 
         const y = target.position.y + target.height / 2 + 
                  Math.sin(angle) * target.height * 0.48;
         
@@ -398,7 +431,8 @@ export class CoverCalculator {
       );
     }
 
-    if (intersectionT === null || intersectionT < 0 || intersectionT > 1) {
+    const epsilon = 0.01;
+    if (intersectionT === null || intersectionT <= epsilon || intersectionT >= (1 - epsilon)) {
       return false;
     }
 

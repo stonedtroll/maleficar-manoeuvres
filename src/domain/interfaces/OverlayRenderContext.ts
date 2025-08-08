@@ -160,6 +160,9 @@ export interface OverlayRenderContext {
       fontColour: string;
       fontWeight: string;
       fontOpacity: number;
+      iconShape?: 'circle' | 'square' | 'triangle';
+      iconSize?: number;
+      iconBorderColour?: string;
       backgroundColour?: string;
       backgroundOpacity?: number;
     };

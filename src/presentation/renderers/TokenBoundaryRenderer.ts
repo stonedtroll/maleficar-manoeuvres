@@ -3,6 +3,7 @@ import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRender
 import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
+import { Scaler } from '../utils/Scaler.js';
 
 /**
  * Renderer for token boundary overlays
@@ -24,13 +25,13 @@ export class TokenBoundaryRenderer {
     graphics.clear();
 
     // Extract all style properties from BoundaryStyle
-    const borderLineWidth = context.boundary?.borderLineWidth ?? 1;
+    const borderLineWidth = Math.round(Scaler.scaleLinear(context.boundary?.borderLineWidth ?? 1));
     const borderColour = this.transformBoundaryColour(context.boundary?.borderColour) ?? 0x8A6A1C;
     const borderOpacity = context.boundary?.borderOpacity ?? 0.9;
     const borderRadius = context.boundary?.borderRadius ?? 0;
     const fillColour = this.transformBoundaryColour(context.boundary?.fillColour) ?? 0x2A3A28;
     const fillOpacity = context.boundary?.fillOpacity ?? 0.7;
-    const fillRadius = borderRadius - borderLineWidth / 2;
+    const fillRadius = borderRadius - borderLineWidth;
     const dashed = context.boundary?.dashed ?? false;
     const dashLength = context.boundary?.dashLength ?? 5;
     const gapLength = context.boundary?.gapLength ?? 5;

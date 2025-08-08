@@ -3,6 +3,7 @@ import type { OverlayRenderContext } from '../../domain/interfaces/OverlayRender
 import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
+import { Scaler } from '../utils/Scaler.js';
 
 export class FacingArcRenderer {
   private readonly logger: FoundryLogger;
@@ -29,9 +30,10 @@ export class FacingArcRenderer {
     const startAngle = facingAngle - arcAngle / 2;
     const endAngle = facingAngle + arcAngle / 2;
     const colour = this.transformArcColour(context.rotation?.arcColour);
+    const arcWidth = Math.round(Scaler.scaleLinear(2));
 
     graphics.lineStyle({
-      width: 2,
+      width: arcWidth,
       color: colour,
       alpha: 0.8,
       cap: PIXI.LINE_CAP.ROUND

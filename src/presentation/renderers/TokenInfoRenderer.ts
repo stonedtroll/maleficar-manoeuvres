@@ -4,6 +4,7 @@ import * as PIXI from 'pixi.js';
 import { MODULE_ID } from '../../config.js';
 import { LoggerFactory, type FoundryLogger } from '../../../lib/log4foundry/log4foundry.js';
 import { RenderingUtility } from '../utils/RenderingUtility.js';
+import { Scaler } from '../utils/Scaler.js';
 
 export class TokenInfoRenderer {
     private readonly logger: FoundryLogger;
@@ -38,7 +39,7 @@ export class TokenInfoRenderer {
 
         const rangeStyle = {
             font: context.styling?.range?.font || 'Roboto Condensed',
-            fontSize: context.styling?.range?.fontSize || 12,
+            fontSize: Math.round(Scaler.scaleLinear(context.styling?.range?.fontSize || 9)),
             fontColour: context.styling?.range?.fontColour || '#FFFFFF',
             fontWeight: context.styling?.range?.fontWeight || '700',
             fontOpacity: context.styling?.range?.fontOpacity || 1,
@@ -48,7 +49,7 @@ export class TokenInfoRenderer {
 
         const coverStyle = {
             font: context.styling?.cover?.font || 'Roboto Condensed',
-            fontSize: context.styling?.cover?.fontSize || 11,
+            fontSize: Math.round(Scaler.scaleLinear(context.styling?.cover?.fontSize || 9)),
             fontColour: context.styling?.cover?.fontColour || '#FFFFFF',
             fontWeight: context.styling?.cover?.fontWeight || '700',
             fontOpacity: context.styling?.cover?.fontOpacity || 1,
@@ -56,10 +57,10 @@ export class TokenInfoRenderer {
             backgroundOpacity: coverBackgroundOpacity
         };
 
-        const iconSize = 8;
-        const iconTextSpacing = 2;
-        const padding = { x: 1, y: 0 };
-        const verticalSpacing = 1; 
+        const iconSize = Math.round(Scaler.scaleLinear(8));
+        const iconTextSpacing = Math.round(Scaler.scaleLinear(2));
+        const padding = { x: Math.round(Scaler.scaleLinear(1)), y: Math.round(Scaler.scaleLinear(0)) };
+        const verticalSpacing = Math.round(Scaler.scaleLinear(1));
 
         const mainContainer = new PIXI.Container();
 
